@@ -184,12 +184,17 @@ class ExpenseRepository {
         .map((r) => r.read<int>('t'));
   }
 
-  Future<int> count(String from, String to) async {
+  Future<int> count(String from, String to, {int? categoryId}) async {
     final r = await db
         .customSelect(
           'SELECT COUNT(*) AS n FROM expenses '
-          'WHERE deleted_at IS NULL AND spent_on >= ? AND spent_on <= ?',
-          variables: [Variable.withString(from), Variable.withString(to)],
+          'WHERE deleted_at IS NULL AND spent_on >= ? AND spent_on <= ? '
+          '${categoryId != null ? 'AND category_id = ?' : ''}',
+          variables: [
+            Variable.withString(from),
+            Variable.withString(to),
+            if (categoryId != null) Variable.withInt(categoryId),
+          ],
           readsFrom: {db.expenses},
         )
         .getSingle();
@@ -203,23 +208,30 @@ class ExpenseRepository {
   Future<Map<int, int>> sumByCategory(String from, String to) =>
       watchSumByCategory(from, to).first;
 
-  Stream<Map<String, int>> watchSumByDay(String from, String to) =>
-      _agg('spent_on', 'spent_on', from, to).watch().map((rows) =>
-          {for (final r in rows) r.read<String>('k'): r.read<int>('total')});
+  Stream<Map<String, int>> watchSumByDay(String from, String to,
+          {int? categoryId}) =>
+      _agg('spent_on', 'spent_on', from, to, categoryId: categoryId)
+          .watch()
+          .map((rows) =>
+              {for (final r in rows) r.read<String>('k'): r.read<int>('total')});
 
-  Future<Map<String, int>> sumByDay(String from, String to) =>
-      watchSumByDay(from, to).first;
+  Future<Map<String, int>> sumByDay(String from, String to, {int? categoryId}) =>
+      watchSumByDay(from, to, categoryId: categoryId).first;
 
-  Future<Map<String, int>> sumByPayment(String from, String to) async {
+  Future<Map<String, int>> sumByPayment(String from, String to,
+      {int? categoryId}) async {
     final rows = await _agg("COALESCE(payment_method, 'unspecified')",
-            "COALESCE(payment_method, 'unspecified')", from, to)
+            "COALESCE(payment_method, 'unspecified')", from, to,
+            categoryId: categoryId)
         .get();
     return {for (final r in rows) r.read<String>('k'): r.read<int>('total')};
   }
 
-  Future<Map<String, int>> sumByLocation(String from, String to) async {
+  Future<Map<String, int>> sumByLocation(String from, String to,
+      {int? categoryId}) async {
     final rows = await _agg("COALESCE(location, 'unspecified')",
-            "COALESCE(location, 'unspecified')", from, to)
+            "COALESCE(location, 'unspecified')", from, to,
+            categoryId: categoryId)
         .get();
     return {for (final r in rows) r.read<String>('k'): r.read<int>('total')};
   }

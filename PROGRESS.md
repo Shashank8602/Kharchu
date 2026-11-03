@@ -5,20 +5,26 @@ Status key: ✅ done and tested · 🟡 done, partly verified · ⬜ not started
 | Phase | Status | Notes |
 |---|---|---|
 | 0. Setup | ✅ | Flutter 3.47.9, project at repo root, packages installed |
-| 1. Data layer | ✅ | 7 tables, repositories, 89 unit tests passing, `flutter analyze` clean |
-| 2. Shell, theme, Groq client | ✅ | 5-tab shell, light/dark theme, Profile + Groq screens, Groq client with fallback model, 154 tests passing in total |
-| 3. Agent: add expense | ⬜ | |
-| 4. Edit / delete via chat | ⬜ | |
-| 5. Questions | ⬜ | |
-| 6. Lending via chat + screens | ⬜ | Data layer done in phase 1 |
-| 7. Budgets + alerts | ⬜ | |
+| 1. Data layer | ✅ | 7 tables, repositories |
+| 2. Shell, theme, Groq client | ✅ | 5 tabs, light/dark, Profile + Groq screens |
+| 3. Agent: add expense via chat | ✅ | Loop, 11 tools, validation, confirm cards, Edit sheet, new-category flow |
+| 4. Edit / delete via chat | ✅ | Update/delete cards, Undo, pick card, stale-card detection |
+| 5. Questions | ✅ | Spending and lending queries with exact figures |
+| 6. Lending | 🟡 | Chat side done (loan, repayment, pick-person cards). **Lending tab and person screen not built yet** |
+| 7. Budgets + alerts | 🟡 | Chat side done (set budget, 80%/100% notices). **Budgets screen not built yet** |
 | 8. Voice | ⬜ | |
-| 9. Dashboard + Transactions | ⬜ | |
-| 10. Chat hygiene (History, purge) | ⬜ | Purge logic done in phase 1 |
-| 11. Profile + backup | ⬜ | |
+| 9. Dashboard + Transactions | ⬜ | placeholders only |
+| 10. Chat hygiene | 🟡 | Fresh chat each day works. **History screen and startup purge not wired yet** |
+| 11. Profile: categories, backup, CSV | ⬜ | Theme, name, key, clear chat done |
 | 12. Hardening + release | ⬜ | |
 
+Tests: 342 passing (unit, agent, widget). `flutter analyze`: no issues.
+
 ## Deviations from plan.md
+- **Loan and repayment cards have Cancel / Save only** (no Edit sheet). To change one,
+  cancel it and say it again. Expense cards have the full Edit sheet.
+- **Business logic never reads through live streams.** Found while testing: a one-off read
+  via `watchAll().first` silently never completed in tests; replaced with plain queries.
 - **Repositories instead of Drift DAOs.** Same queries, less generated code.
 - **Search uses tokenised `LIKE`, not SQLite FTS5.** Every word must match item, location
   or the original message; partial words and any word order work. Fast enough for a

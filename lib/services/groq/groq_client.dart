@@ -109,7 +109,8 @@ class GroqClient {
       'model': model,
       'temperature': 0.1,
       'max_completion_tokens': maxTokens,
-      'messages': messages,
+      // a copy, so later changes to the caller's list never alter this request
+      'messages': List<Map<String, dynamic>>.of(messages),
       if (model.startsWith('openai/gpt-oss')) 'reasoning_effort': 'low',
       if (tools != null && tools.isNotEmpty) ...{
         'tools': tools,

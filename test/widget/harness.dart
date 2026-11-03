@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart' show WidgetTester, testWidgets;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:kharchu/app.dart';
@@ -55,14 +56,28 @@ class Harness {
         limiter: RateLimiter(delay: (_) async {}),
       );
 
-  List<Override> get overrides => [
+  /// Overrides with a custom clock (tests that move time use this).
+  List<Override> overridesWith(DateTime Function() clock) => [
         sharedPrefsProvider.overrideWithValue(prefs),
         databaseProvider.overrideWithValue(db),
         keyStoreProvider.overrideWithValue(keys),
         groqClientProvider.overrideWithValue(groq),
-        clockProvider.overrideWithValue(() => now),
+        clockProvider.overrideWithValue(clock),
       ];
+
+  List<Override> get overrides => overridesWith(() => now);
 
   Widget app() =>
       ProviderScope(overrides: overrides, child: const KharchuApp());
+}
+
+/// `testWidgets`, plus a clean shutdown: disposing the tree cancels Drift's
+/// live queries, which schedule a zero-length timer; letting it fire avoids
+/// "a Timer is still pending" at the end of every test that shows the Chat.
+void harnessTest(String name, Future<void> Function(WidgetTester tester) body) {
+  testWidgets(name, (tester) async {
+    await body(tester);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
 }
