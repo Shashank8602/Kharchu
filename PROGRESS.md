@@ -6,7 +6,7 @@ Status key: ✅ done and tested · 🟡 done, partly verified · ⬜ not started
 |---|---|---|
 | 0. Setup | ✅ | Flutter 3.47.9, project at repo root, packages installed |
 | 1. Data layer | ✅ | 7 tables, repositories, 89 unit tests passing, `flutter analyze` clean |
-| 2. Shell, theme, Groq client | ⬜ | |
+| 2. Shell, theme, Groq client | ✅ | 5-tab shell, light/dark theme, Profile + Groq screens, Groq client with fallback model, 154 tests passing in total |
 | 3. Agent: add expense | ⬜ | |
 | 4. Edit / delete via chat | ⬜ | |
 | 5. Questions | ⬜ | |
@@ -25,6 +25,20 @@ Status key: ✅ done and tested · 🟡 done, partly verified · ⬜ not started
   personal-sized database, and avoids FTS table sync. `%`, `_` and `\` are escaped.
 - **Stream helper `watchQuery`** replaces `async*` generators for live data: cancelling an
   `async*` generator parked on `await for` leaks the subscription.
+
+- **`google_fonts` pinned to 8.2.1, not 9.x.** Flutter 3.47 split Material into a new
+  `material_ui` package; google_fonts 9.0.0 builds its `TextTheme` from that package, which
+  is a different class from `flutter/material.dart`'s, so the two cannot be combined.
+- **Kannada text uses the phone's system font** instead of a bundled Noto Sans Kannada
+  (one fewer download). Not checked on a real device.
+- **Pasted keys are cleaned** (quotes, spaces, `Bearer `, whole `GROQ_API_KEY=` lines).
+
+## Verified against the live Groq API (2026-11-03)
+- Your account lists `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `whisper-large-v3`.
+- `reasoning_effort: "low"` is accepted; a tool-call request cost about 260 tokens.
+- Tool calls come back as `message.tool_calls[].function.{name,arguments}` (arguments is a
+  JSON string). The model wrote the category as "Food", which the alias map resolves.
+- `llama-3.3-70b-versatile` was shut down on 2026-08-16 per Groq's deprecations page, and is absent from your model list.
 
 ## Edge cases covered by tests so far
 Money: floating-point rounding, Indian digit grouping, negatives, sub-rupee amounts.
