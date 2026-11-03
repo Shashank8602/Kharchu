@@ -28,7 +28,9 @@ class HistoryDay {
 }
 
 /// Earlier days' chats, newest first, boiled down to what happened.
-final historyProvider = FutureProvider.autoDispose<List<HistoryDay>>((ref) async {
+final historyProvider = FutureProvider.autoDispose<List<HistoryDay>>((
+  ref,
+) async {
   final chat = ref.watch(chatRepoProvider);
   final today = ref.watch(todayProvider);
   final days = <HistoryDay>[];
@@ -41,9 +43,13 @@ final historyProvider = FutureProvider.autoDispose<List<HistoryDay>>((ref) async
       } else if (m.role == 'assistant' && lastUser != null) {
         lines.add(HistoryLine('?', lastUser));
         lastUser = null;
-      } else if (m.role == 'card' && m.cardStatus == 'confirmed' && m.cardPayload != null) {
+      } else if (m.role == 'card' &&
+          m.cardStatus == 'confirmed' &&
+          m.cardPayload != null) {
         try {
-          final p = Proposal.fromJson(jsonDecode(m.cardPayload!) as Map<String, dynamic>);
+          final p = Proposal.fromJson(
+            jsonDecode(m.cardPayload!) as Map<String, dynamic>,
+          );
           if (p is! PickProposal) lines.add(HistoryLine('✓', p.summary));
         } catch (_) {}
       }
@@ -74,7 +80,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         leading: IconButton(
           tooltip: 'Back',
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/chat'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/chat'),
         ),
         title: Text('History', style: headingStyle(size: 19, color: kc.ink)),
         shape: Border(bottom: BorderSide(color: kc.line)),
@@ -85,7 +92,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         data: (list) {
           if (list.isEmpty) {
             return Center(
-              child: Text('Nothing earlier yet', style: TextStyle(color: kc.muted)),
+              child: Text(
+                'Nothing earlier yet',
+                style: TextStyle(color: kc.muted),
+              ),
             );
           }
           return ListView(
@@ -96,15 +106,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   day: d,
                   label: friendlyDate(d.day, today),
                   open: _open == d.day,
-                  onToggle: () => setState(() => _open = _open == d.day ? null : d.day),
+                  onToggle: () =>
+                      setState(() => _open = _open == d.day ? null : d.day),
                 ),
                 const SizedBox(height: 8),
               ],
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text('Chats clear after 30 days. Your entries stay.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: kc.muted, fontSize: 12)),
+                child: Text(
+                  'Chats clear after 30 days. Your entries stay.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: kc.muted, fontSize: 12),
+                ),
               ),
             ],
           );
@@ -152,13 +165,24 @@ class _DayCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(label,
-                          style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700)),
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: kc.ink,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                    Text(summary, style: TextStyle(color: kc.muted, fontSize: 13)),
+                    Text(
+                      summary,
+                      style: TextStyle(color: kc.muted, fontSize: 13),
+                    ),
                     const SizedBox(width: 6),
-                    Icon(open ? Icons.expand_less : Icons.expand_more,
-                        size: 20, color: kc.muted),
+                    Icon(
+                      open ? Icons.expand_less : Icons.expand_more,
+                      size: 20,
+                      color: kc.muted,
+                    ),
                   ],
                 ),
               ),
@@ -172,20 +196,31 @@ class _DayCard extends StatelessWidget {
                   for (final l in day.lines)
                     Container(
                       margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 9,
+                      ),
                       decoration: BoxDecoration(
-                          color: kc.field, borderRadius: BorderRadius.circular(10)),
+                        color: kc.field,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Row(
                         children: [
-                          Text(l.mark,
-                              style: TextStyle(
-                                  color: kc.accent, fontWeight: FontWeight.w800)),
+                          Text(
+                            l.mark,
+                            style: TextStyle(
+                              color: kc.accent,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Text(l.text,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: kc.ink, fontSize: 14)),
+                            child: Text(
+                              l.text,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: kc.ink, fontSize: 14),
+                            ),
                           ),
                         ],
                       ),

@@ -39,14 +39,14 @@ class ProposalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => switch (proposal) {
-        final AddExpenseProposal p => _AddCard(p, todayIso, callbacks),
-        final UpdateExpenseProposal p => _UpdateCard(p, callbacks),
-        final DeleteExpenseProposal p => _DeleteCard(p, todayIso, callbacks),
-        final SetBudgetProposal p => _BudgetCard(p, callbacks),
-        final LoanProposal p => _LoanCard(p, todayIso, callbacks),
-        final RepaymentProposal p => _RepaymentCard(p, callbacks),
-        final PickProposal p => _PickCard(p, callbacks),
-      };
+    final AddExpenseProposal p => _AddCard(p, todayIso, callbacks),
+    final UpdateExpenseProposal p => _UpdateCard(p, callbacks),
+    final DeleteExpenseProposal p => _DeleteCard(p, todayIso, callbacks),
+    final SetBudgetProposal p => _BudgetCard(p, callbacks),
+    final LoanProposal p => _LoanCard(p, todayIso, callbacks),
+    final RepaymentProposal p => _RepaymentCard(p, callbacks),
+    final PickProposal p => _PickCard(p, callbacks),
+  };
 }
 
 class _Shell extends StatelessWidget {
@@ -89,13 +89,16 @@ class _Amount extends StatelessWidget {
   /// long category name on a narrow phone.
   @override
   Widget build(BuildContext context) => Flexible(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(formatINR(paise),
-              maxLines: 1, style: headingStyle(size: 28, color: context.kc.ink)),
-        ),
-      );
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text(
+        formatINR(paise),
+        maxLines: 1,
+        style: headingStyle(size: 28, color: context.kc.ink),
+      ),
+    ),
+  );
 }
 
 class _Pill extends StatelessWidget {
@@ -107,21 +110,33 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[Icon(icon, size: 14, color: fg), const SizedBox(width: 5)],
-            Flexible(
-              child: Text(text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 13)),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 14, color: fg),
+          const SizedBox(width: 5),
+        ],
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
             ),
-          ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 /// Cancel / primary buttons. Disables itself while the action runs so a quick
@@ -174,7 +189,9 @@ class _ButtonsState extends State<_Buttons> {
           child: FilledButton(
             style: widget.danger
                 ? FilledButton.styleFrom(
-                    backgroundColor: kc.danger, foregroundColor: Colors.white)
+                    backgroundColor: kc.danger,
+                    foregroundColor: Colors.white,
+                  )
                 : null,
             onPressed: _busy ? null : () => _run(widget.onPrimary),
             child: Text(widget.primaryLabel),
@@ -209,12 +226,19 @@ class _AddCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('New category',
-                    style: TextStyle(
-                        color: kc.lentInk, fontWeight: FontWeight.w700, fontSize: 12)),
+                Text(
+                  'New category',
+                  style: TextStyle(
+                    color: kc.lentInk,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('None of your categories fit. Create "${p.categoryName}"?',
-                    style: TextStyle(color: kc.lentInk, fontSize: 14)),
+                Text(
+                  'None of your categories fit. Create "${p.categoryName}"?',
+                  style: TextStyle(color: kc.lentInk, fontSize: 14),
+                ),
               ],
             ),
           )
@@ -241,7 +265,11 @@ class _AddCard extends StatelessWidget {
             runSpacing: 6,
             children: [
               if (p.warnings.contains('large_amount'))
-                _Pill('Large amount, please check', bg: kc.warnBg, fg: kc.warnInk),
+                _Pill(
+                  'Large amount, please check',
+                  bg: kc.warnBg,
+                  fg: kc.warnInk,
+                ),
               if (p.warnings.contains('future_date'))
                 _Pill('Date set to today', bg: kc.warnBg, fg: kc.warnInk),
             ],
@@ -255,7 +283,9 @@ class _AddCard extends StatelessWidget {
                 if (i > 0) const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 40),
+                    ),
                     onPressed: () => cb.onPaymentChosen(_methods[i].$1),
                     child: Text(_methods[i].$2),
                   ),
@@ -265,8 +295,14 @@ class _AddCard extends StatelessWidget {
           ),
         ] else ...[
           const SizedBox(height: 8),
-          Text(_paymentLabel(p.paymentMethod!),
-              style: TextStyle(color: kc.muted, fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(
+            _paymentLabel(p.paymentMethod!),
+            style: TextStyle(
+              color: kc.muted,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
         const SizedBox(height: 14),
         if (p.isNewCategory)
@@ -280,10 +316,16 @@ class _AddCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(onPressed: cb.onEdit, child: const Text('Edit')),
+                child: OutlinedButton(
+                  onPressed: cb.onEdit,
+                  child: const Text('Edit'),
+                ),
               ),
               const SizedBox(width: 10),
-              Expanded(flex: 2, child: _SaveOnly(label: 'Save', onTap: cb.onConfirm)),
+              Expanded(
+                flex: 2,
+                child: _SaveOnly(label: 'Save', onTap: cb.onConfirm),
+              ),
             ],
           ),
       ],
@@ -291,12 +333,12 @@ class _AddCard extends StatelessWidget {
   }
 
   static String _paymentLabel(String m) => switch (m) {
-        'cash' => 'Cash',
-        'upi' => 'UPI',
-        'card' => 'Card',
-        'netbanking' => 'Net banking',
-        _ => 'Other',
-      };
+    'cash' => 'Cash',
+    'upi' => 'UPI',
+    'card' => 'Card',
+    'netbanking' => 'Net banking',
+    _ => 'Other',
+  };
 }
 
 class _SaveOnly extends StatefulWidget {
@@ -313,18 +355,18 @@ class _SaveOnlyState extends State<_SaveOnly> {
 
   @override
   Widget build(BuildContext context) => FilledButton(
-        onPressed: _busy
-            ? null
-            : () async {
-                setState(() => _busy = true);
-                try {
-                  await widget.onTap();
-                } finally {
-                  if (mounted) setState(() => _busy = false);
-                }
-              },
-        child: Text(widget.label),
-      );
+    onPressed: _busy
+        ? null
+        : () async {
+            setState(() => _busy = true);
+            try {
+              await widget.onTap();
+            } finally {
+              if (mounted) setState(() => _busy = false);
+            }
+          },
+    child: Text(widget.label),
+  );
 }
 
 class _UpdateCard extends StatelessWidget {
@@ -336,70 +378,105 @@ class _UpdateCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final kc = context.kc;
     final rows = <Widget>[];
-    void row(String label, String before, String after) => rows.add(Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-                color: kc.field, borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              children: [
-                Text(label, style: TextStyle(color: kc.muted, fontSize: 13)),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(before,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: kc.muted, decoration: TextDecoration.lineThrough)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.arrow_forward, size: 16, color: kc.muted),
-                ),
-                Flexible(
-                  child: Text(after,
-                      overflow: TextOverflow.ellipsis,
-                      style: headingStyle(size: 17, color: kc.ink)),
-                ),
-              ],
-            ),
+    void row(String label, String before, String after) => rows.add(
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: kc.field,
+            borderRadius: BorderRadius.circular(12),
           ),
-        ));
+          child: Row(
+            children: [
+              Text(label, style: TextStyle(color: kc.muted, fontSize: 13)),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  before,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: kc.muted,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.arrow_forward, size: 16, color: kc.muted),
+              ),
+              Flexible(
+                child: Text(
+                  after,
+                  overflow: TextOverflow.ellipsis,
+                  style: headingStyle(size: 17, color: kc.ink),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
     final c = p.changes;
     final b = p.before;
     if (c.containsKey('amountPaise')) {
-      row('Amount', formatINR(b['amountPaise'] as int), formatINR(c['amountPaise'] as int));
+      row(
+        'Amount',
+        formatINR(b['amountPaise'] as int),
+        formatINR(c['amountPaise'] as int),
+      );
     }
-    if (c.containsKey('item')) row('Item', b['item'] as String, c['item'] as String);
+    if (c.containsKey('item')) {
+      row('Item', b['item'] as String, c['item'] as String);
+    }
     if (c.containsKey('categoryName')) {
       row('Category', b['categoryName'] as String, c['categoryName'] as String);
     }
     if (c.containsKey('spentOn')) {
-      row('Date', fullDateLabel(b['spentOn'] as String), fullDateLabel(c['spentOn'] as String));
+      row(
+        'Date',
+        fullDateLabel(b['spentOn'] as String),
+        fullDateLabel(c['spentOn'] as String),
+      );
     }
     if (c.containsKey('location')) {
-      row('Place', (b['location'] as String?) ?? 'none', (c['location'] as String?) ?? 'none');
+      row(
+        'Place',
+        (b['location'] as String?) ?? 'none',
+        (c['location'] as String?) ?? 'none',
+      );
     }
     if (c.containsKey('paymentMethod')) {
-      row('Paid with', (b['paymentMethod'] as String?) ?? 'not set',
-          (c['paymentMethod'] as String?) ?? 'not set');
+      row(
+        'Paid with',
+        (b['paymentMethod'] as String?) ?? 'not set',
+        (c['paymentMethod'] as String?) ?? 'not set',
+      );
     }
 
     return _Shell(
       children: [
-        Text('Update · ${p.itemBefore}',
-            style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700, fontSize: 15)),
         Text(
-            '${dayLabel(b['spentOn'] as String)} · ${b['categoryName']}',
-            style: TextStyle(color: kc.muted, fontSize: 13)),
+          'Update · ${p.itemBefore}',
+          style: TextStyle(
+            color: kc.ink,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
+        Text(
+          '${dayLabel(b['spentOn'] as String)} · ${b['categoryName']}',
+          style: TextStyle(color: kc.muted, fontSize: 13),
+        ),
         ...rows,
         const SizedBox(height: 14),
         _Buttons(
-            cancelLabel: 'Cancel',
-            primaryLabel: 'Update',
-            onCancel: cb.onCancel,
-            onPrimary: cb.onConfirm),
+          cancelLabel: 'Cancel',
+          primaryLabel: 'Update',
+          onCancel: cb.onCancel,
+          onPrimary: cb.onConfirm,
+        ),
       ],
     );
   }
@@ -416,19 +493,29 @@ class _DeleteCard extends StatelessWidget {
     final kc = context.kc;
     return _Shell(
       children: [
-        Text('Delete this expense?',
-            style: TextStyle(color: kc.dangerInk, fontWeight: FontWeight.w700, fontSize: 13)),
+        Text(
+          'Delete this expense?',
+          style: TextStyle(
+            color: kc.dangerInk,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
         const SizedBox(height: 6),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _Amount(p.amountPaise),
-            Flexible(child: _Pill(p.categoryName, bg: kc.soft, fg: kc.softInk)),
+            Flexible(
+              child: _Pill(p.categoryName, bg: kc.soft, fg: kc.softInk),
+            ),
           ],
         ),
         const SizedBox(height: 8),
-        Text('${p.item} · ${friendlyDate(p.spentOn, todayIso)}',
-            style: TextStyle(color: kc.muted, fontSize: 14)),
+        Text(
+          '${p.item} · ${friendlyDate(p.spentOn, todayIso)}',
+          style: TextStyle(color: kc.muted, fontSize: 14),
+        ),
         const SizedBox(height: 14),
         _Buttons(
           cancelLabel: 'Keep',
@@ -452,8 +539,14 @@ class _BudgetCard extends StatelessWidget {
     final kc = context.kc;
     return _Shell(
       children: [
-        Text('${p.categoryName} budget',
-            style: TextStyle(color: kc.muted, fontWeight: FontWeight.w700, fontSize: 13)),
+        Text(
+          '${p.categoryName} budget',
+          style: TextStyle(
+            color: kc.muted,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
         const SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -466,15 +559,18 @@ class _BudgetCard extends StatelessWidget {
         ),
         if (p.previousLimitPaise != null) ...[
           const SizedBox(height: 6),
-          Text('Replaces ${formatINR(p.previousLimitPaise!)}',
-              style: TextStyle(color: kc.muted, fontSize: 13)),
+          Text(
+            'Replaces ${formatINR(p.previousLimitPaise!)}',
+            style: TextStyle(color: kc.muted, fontSize: 13),
+          ),
         ],
         const SizedBox(height: 14),
         _Buttons(
-            cancelLabel: 'Cancel',
-            primaryLabel: 'Set budget',
-            onCancel: cb.onCancel,
-            onPrimary: cb.onConfirm),
+          cancelLabel: 'Cancel',
+          primaryLabel: 'Set budget',
+          onCancel: cb.onCancel,
+          onPrimary: cb.onConfirm,
+        ),
       ],
     );
   }
@@ -502,8 +598,12 @@ class _LoanCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _Amount(p.amountPaise),
-            _Pill(p.lent ? 'You lent' : 'You borrowed',
-                bg: bg, fg: fg, icon: p.lent ? Icons.north_east : Icons.south_west),
+            _Pill(
+              p.lent ? 'You lent' : 'You borrowed',
+              bg: bg,
+              fg: fg,
+              icon: p.lent ? Icons.north_east : Icons.south_west,
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -512,18 +612,27 @@ class _LoanCard extends StatelessWidget {
             CircleAvatar(
               radius: 20,
               backgroundColor: bg,
-              child: Text(p.personName.isEmpty ? '?' : p.personName[0].toUpperCase(),
-                  style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
+              child: Text(
+                p.personName.isEmpty ? '?' : p.personName[0].toUpperCase(),
+                style: TextStyle(color: fg, fontWeight: FontWeight.w700),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(p.personName,
-                      style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700)),
-                  Text(p.isNewPerson ? '$detail · new person' : detail,
-                      style: TextStyle(color: kc.muted, fontSize: 13)),
+                  Text(
+                    p.personName,
+                    style: TextStyle(
+                      color: kc.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    p.isNewPerson ? '$detail · new person' : detail,
+                    style: TextStyle(color: kc.muted, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -535,10 +644,11 @@ class _LoanCard extends StatelessWidget {
         ],
         const SizedBox(height: 14),
         _Buttons(
-            cancelLabel: 'Cancel',
-            primaryLabel: 'Save',
-            onCancel: cb.onCancel,
-            onPrimary: cb.onConfirm),
+          cancelLabel: 'Cancel',
+          primaryLabel: 'Save',
+          onCancel: cb.onCancel,
+          onPrimary: cb.onConfirm,
+        ),
       ],
     );
   }
@@ -561,18 +671,27 @@ class _RepaymentCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _Amount(p.amountPaise),
-            _Pill(p.lent ? 'Paid back to you' : 'You paid back', bg: bg, fg: fg),
+            _Pill(
+              p.lent ? 'Paid back to you' : 'You paid back',
+              bg: bg,
+              fg: fg,
+            ),
           ],
         ),
         const SizedBox(height: 12),
-        Text(p.personName, style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700)),
+        Text(
+          p.personName,
+          style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700),
+        ),
         if (p.note != null)
           Text(p.note!, style: TextStyle(color: kc.muted, fontSize: 13)),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration:
-              BoxDecoration(color: kc.field, borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: kc.field,
+            borderRadius: BorderRadius.circular(12),
+          ),
           // scales down rather than overflowing with large amounts
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -580,28 +699,40 @@ class _RepaymentCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(p.lent ? 'Owes you' : 'You owe',
-                    style: TextStyle(color: kc.muted, fontSize: 13)),
+                Text(
+                  p.lent ? 'Owes you' : 'You owe',
+                  style: TextStyle(color: kc.muted, fontSize: 13),
+                ),
                 const SizedBox(width: 12),
-                Text(formatINR(p.outstandingBeforePaise),
-                    style: TextStyle(
-                        color: kc.muted, decoration: TextDecoration.lineThrough)),
+                Text(
+                  formatINR(p.outstandingBeforePaise),
+                  style: TextStyle(
+                    color: kc.muted,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Icon(Icons.arrow_forward, size: 16, color: kc.muted),
                 ),
-                Text(settles ? 'Settled' : formatINR(p.outstandingAfterPaise),
-                    style: headingStyle(size: 17, color: settles ? kc.softInk : kc.ink)),
+                Text(
+                  settles ? 'Settled' : formatINR(p.outstandingAfterPaise),
+                  style: headingStyle(
+                    size: 17,
+                    color: settles ? kc.softInk : kc.ink,
+                  ),
+                ),
               ],
             ),
           ),
         ),
         const SizedBox(height: 14),
         _Buttons(
-            cancelLabel: 'Cancel',
-            primaryLabel: 'Save',
-            onCancel: cb.onCancel,
-            onPrimary: cb.onConfirm),
+          cancelLabel: 'Cancel',
+          primaryLabel: 'Save',
+          onCancel: cb.onCancel,
+          onPrimary: cb.onConfirm,
+        ),
       ],
     );
   }
@@ -622,7 +753,14 @@ class _PickCard extends StatelessWidget {
     };
     return _Shell(
       children: [
-        Text(title, style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700, fontSize: 15)),
+        Text(
+          title,
+          style: TextStyle(
+            color: kc.ink,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
         const SizedBox(height: 8),
         for (final item in p.items)
           Padding(
@@ -634,27 +772,39 @@ class _PickCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => cb.onChoose(item.id),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.title,
-                                style: TextStyle(
-                                    color: kc.ink, fontWeight: FontWeight.w700)),
-                            Text(item.subtitle,
-                                style: TextStyle(color: kc.muted, fontSize: 13)),
+                            Text(
+                              item.title,
+                              style: TextStyle(
+                                color: kc.ink,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              item.subtitle,
+                              style: TextStyle(color: kc.muted, fontSize: 13),
+                            ),
                           ],
                         ),
                       ),
                       if (item.amountPaise != null)
-                        Text(formatINR(item.amountPaise!),
-                            style: TextStyle(
-                                color: kc.ink,
-                                fontWeight: FontWeight.w700,
-                                fontFeatures: const [FontFeature.tabularFigures()])),
+                        Text(
+                          formatINR(item.amountPaise!),
+                          style: TextStyle(
+                            color: kc.ink,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -664,7 +814,10 @@ class _PickCard extends StatelessWidget {
         const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(onPressed: cb.onCancel, child: const Text('Cancel')),
+          child: TextButton(
+            onPressed: cb.onCancel,
+            child: const Text('Cancel'),
+          ),
         ),
       ],
     );

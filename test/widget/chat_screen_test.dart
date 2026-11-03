@@ -239,12 +239,12 @@ void main() {
       expect(h.adapter.requests.length, 1);
     });
 
-    harnessTest('an empty or blank message is not sent', (tester) async {
+    harnessTest('a blank message cannot be sent: Send stays hidden behind the mic', (tester) async {
       await start(tester);
       await tester.enterText(find.byType(TextField), '   ');
       await tester.pump();
-      final send = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.arrow_upward));
-      expect(send.onPressed, isNull);
+      expect(find.byTooltip('Send'), findsNothing);
+      expect(find.byTooltip('Speak'), findsOneWidget);
       expect(h.adapter.requests, isEmpty);
     });
 

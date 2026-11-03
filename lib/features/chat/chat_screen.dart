@@ -12,9 +12,11 @@ import '../../services/agent/proposals.dart';
 import '../../services/card_actions.dart';
 import '../../widgets/expense_form_sheet.dart';
 import 'chat_controller.dart';
+import 'voice_controller.dart';
 import 'widgets/bubbles.dart';
 import 'widgets/cards.dart';
 import 'widgets/composer.dart';
+import 'widgets/recording_bar.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -23,7 +25,8 @@ class ChatScreen extends ConsumerStatefulWidget {
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObserver {
+class _ChatScreenState extends ConsumerState<ChatScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -42,11 +45,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     if (state == AppLifecycleState.resumed) {
       ref.read(todayProvider.notifier).refresh();
     }
+    // never keep the microphone open in the background (not on `inactive`,
+    // which is also what the system permission dialog causes)
+    if (state == AppLifecycleState.paused) {
+      ref.read(voiceControllerProvider.notifier).cancel();
+    }
+  }
+
+  Future<void> _startVoice() async {
+    final problem = await ref.read(voiceControllerProvider.notifier).start();
+    if (problem != null) _toast(problem);
+  }
+
+  Future<void> _stopVoice() async {
+    final problem = await ref
+        .read(voiceControllerProvider.notifier)
+        .stopAndSend();
+    if (problem != null) _toast(problem);
   }
 
   Proposal? _proposalOf(ChatMessage m) {
     try {
-      return Proposal.fromJson(jsonDecode(m.cardPayload!) as Map<String, dynamic>);
+      return Proposal.fromJson(
+        jsonDecode(m.cardPayload!) as Map<String, dynamic>,
+      );
     } catch (_) {
       return null;
     }
@@ -56,11 +78,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(text),
-        action: action,
-        duration: duration ?? const Duration(seconds: 4),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(text),
+          action: action,
+          duration: duration ?? const Duration(seconds: 4),
+          // sit above the composer, so the mic and Send stay reachable
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 84),
+        ),
+      );
   }
 
   Future<void> _confirm(ChatMessage m, {Proposal? edited}) async {
@@ -180,10 +206,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         if (p == null) return null;
         return switch (m.cardStatus) {
           'pending' => ProposalCard(
-              proposal: p,
-              todayIso: today,
-              callbacks: _callbacks(m, p),
-            ),
+            proposal: p,
+            todayIso: today,
+            callbacks: _callbacks(m, p),
+          ),
           'confirmed' => p is PickProposal ? null : SavedChip(proposal: p),
           'expired' => const _ExpiredNote(),
           _ => null, // cancelled cards disappear
@@ -199,24 +225,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     final messages =
         ref.watch(chatMessagesProvider).asData?.value ?? const <ChatMessage>[];
     final chat = ref.watch(chatControllerProvider);
+    final voice = ref.watch(voiceControllerProvider);
+    final transcribing = voice.phase == VoicePhase.transcribing;
 
     final items = <Widget>[
       if (messages.isNotEmpty) const DayLabel('Today'),
       for (final m in messages) ?_messageView(m, today),
+      if (transcribing) const ThinkingBubble(label: 'Transcribing…'),
       if (chat.sending) const ThinkingBubble(),
       if (chat.error != null)
         ErrorBubble(
           error: chat.error!,
           onRetry: () => ref.read(chatControllerProvider.notifier).retry(),
-          onDismiss: () => ref.read(chatControllerProvider.notifier).dismissError(),
+          onDismiss: () =>
+              ref.read(chatControllerProvider.notifier).dismissError(),
         ),
     ];
 
     return Scaffold(
       backgroundColor: kc.bg,
       appBar: AppBar(
-        title: Text('Kharchu',
-            style: headingStyle(size: 22, color: kc.ink).copyWith(letterSpacing: -0.4)),
+        title: Text(
+          'Kharchu',
+          style: headingStyle(
+            size: 22,
+            color: kc.ink,
+          ).copyWith(letterSpacing: -0.4),
+        ),
         shape: Border(bottom: BorderSide(color: kc.line)),
         actions: [
           IconButton(
@@ -238,10 +273,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
               itemBuilder: (_, i) => items[items.length - 1 - i],
             ),
           ),
-          Composer(
-            sending: chat.sending,
-            onSend: (t) => ref.read(chatControllerProvider.notifier).send(t),
-          ),
+          if (voice.phase == VoicePhase.recording)
+            RecordingBar(
+              seconds: voice.seconds,
+              levels: voice.levels,
+              onCancel: () =>
+                  ref.read(voiceControllerProvider.notifier).cancel(),
+              onStop: _stopVoice,
+            )
+          else
+            Composer(
+              sending: chat.sending || transcribing,
+              onSend: (t) => ref.read(chatControllerProvider.notifier).send(t),
+              trailing: IconButton.filled(
+                tooltip: 'Speak',
+                onPressed: (chat.sending || transcribing) ? null : _startVoice,
+                style: IconButton.styleFrom(
+                  backgroundColor: kc.accent,
+                  foregroundColor: kc.onAccent,
+                  disabledBackgroundColor: kc.track,
+                  minimumSize: const Size(48, 48),
+                ),
+                icon: const Icon(Icons.mic_none),
+              ),
+            ),
         ],
       ),
     );
@@ -253,8 +308,10 @@ class _ExpiredNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Text('That card expired because the entry changed. Ask again.',
-            style: TextStyle(color: context.kc.muted, fontSize: 13)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 4),
+    child: Text(
+      'That card expired because the entry changed. Ask again.',
+      style: TextStyle(color: context.kc.muted, fontSize: 13),
+    ),
+  );
 }

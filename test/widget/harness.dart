@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -15,6 +16,7 @@ import 'package:kharchu/providers.dart';
 import 'package:kharchu/services/file_gateway.dart';
 import 'package:kharchu/services/groq/groq_client.dart';
 import 'package:kharchu/services/groq/rate_limiter.dart';
+import 'package:kharchu/services/voice_recorder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../unit/fake_http.dart';
@@ -32,6 +34,9 @@ class Harness {
 
   /// Stands in for Android's Save and Open dialogs.
   final FakeGateway files = FakeGateway();
+
+  /// Stands in for the microphone.
+  final FakeRecorder recorder = FakeRecorder();
 
   static Future<Harness> create({
     Map<String, Object> prefs = const {},
@@ -70,6 +75,7 @@ class Harness {
         groqClientProvider.overrideWithValue(groq),
         clockProvider.overrideWithValue(clock),
         fileGatewayProvider.overrideWithValue(files),
+        voiceRecorderProvider.overrideWithValue(recorder),
       ];
 
   List<Override> get overrides => overridesWith(() => now);
@@ -113,4 +119,39 @@ class FakeGateway implements FileGateway {
 
   @override
   Future<Uint8List?> pick({String? dialogTitle}) async => toPick;
+}
+
+/// A microphone that records nothing but can be told what to do.
+class FakeRecorder implements VoiceRecorder {
+  bool allowed = true;
+  bool throwOnStart = false;
+  Uint8List? audio = Uint8List.fromList([1, 2, 3, 4]);
+  int starts = 0, stops = 0, cancels = 0;
+  final _levels = StreamController<double>.broadcast();
+
+  void emitLevel(double level) => _levels.add(level);
+
+  @override
+  Future<bool> start() async {
+    starts++;
+    if (throwOnStart) throw StateError('no microphone');
+    return allowed;
+  }
+
+  @override
+  Stream<double> levels() => _levels.stream;
+
+  @override
+  Future<Uint8List?> stop() async {
+    stops++;
+    return audio;
+  }
+
+  @override
+  Future<void> cancel() async => cancels++;
+
+  @override
+  Future<void> dispose() async {
+    if (!_levels.isClosed) await _levels.close();
+  }
 }
