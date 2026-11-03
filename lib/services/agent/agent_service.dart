@@ -100,6 +100,17 @@ class AgentService {
       } on GroqException catch (e) {
         // A malformed reply is worth one more try before giving up.
         if (e is GroqBadResponse && step == 0) continue;
+        // Groq rejected the model's tool call (for example a value of the wrong
+        // type). Tell the model what was wrong, as we do for our own checks.
+        if (e is GroqBadRequest && step < maxSteps - 1) {
+          final detail = e.detail.length > 300 ? e.detail.substring(0, 300) : e.detail;
+          messages.add({
+            'role': 'user',
+            'content': 'Your last tool call was rejected: $detail '
+                'Call the tool again with arguments that match its schema.',
+          });
+          continue;
+        }
         return AgentFailure(e);
       }
 
