@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/money.dart';
 import '../../core/theme.dart';
@@ -217,6 +218,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
         title: Text('Kharchu',
             style: headingStyle(size: 22, color: kc.ink).copyWith(letterSpacing: -0.4)),
         shape: Border(bottom: BorderSide(color: kc.line)),
+        actions: [
+          IconButton(
+            tooltip: 'History',
+            icon: const Icon(Icons.history),
+            onPressed: () => context.go('/chat/history'),
+          ),
+        ],
       ),
       body: Column(
         children: [

@@ -14,7 +14,10 @@ import 'data/settings_store.dart';
 import 'services/agent/agent_service.dart';
 import 'services/agent/tool_executor.dart';
 import 'services/budget_alerts.dart';
+import 'services/backup_service.dart';
 import 'services/card_actions.dart';
+import 'services/export_service.dart';
+import 'services/file_gateway.dart';
 import 'services/groq/groq_client.dart';
 
 /// Overridden in main() once SharedPreferences has loaded.
@@ -147,3 +150,11 @@ final cardActionsProvider = Provider((ref) => CardActions(
       alerts: ref.watch(budgetAlertsProvider),
       today: ref.watch(todayFnProvider),
     ));
+
+final fileGatewayProvider = Provider<FileGateway>((ref) => SystemFileGateway());
+
+final backupServiceProvider =
+    Provider((ref) => BackupService(ref.watch(databaseProvider)));
+
+final exportServiceProvider =
+    Provider((ref) => ExportService(ref.watch(expenseRepoProvider)));
