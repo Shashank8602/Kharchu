@@ -10,17 +10,19 @@ Status key: ✅ done and tested · 🟡 done, partly verified · ⬜ not started
 | 3. Agent: add expense via chat | ✅ | Loop, 11 tools, validation, confirm cards, Edit sheet, new-category flow |
 | 4. Edit / delete via chat | ✅ | Update/delete cards, Undo, pick card, stale-card detection |
 | 5. Questions | ✅ | Spending and lending queries with exact figures |
-| 6. Lending | 🟡 | Chat side done (loan, repayment, pick-person cards). **Lending tab and person screen not built yet** |
-| 7. Budgets + alerts | 🟡 | Chat side done (set budget, 80%/100% notices). **Budgets screen not built yet** |
+| 6. Lending | ✅ | Chat cards, Lending tab (open/settled, net per person), person screen with repayments |
+| 7. Budgets + alerts | ✅ | Chat alerts and the Budgets screen (add, edit, delete, statuses) |
 | 8. Voice | ⬜ | |
-| 9. Dashboard + Transactions | ⬜ | placeholders only |
+| 9. Dashboard + Transactions | ✅ | Month navigation, donut, daily bars, search, filters, edit, swipe-delete with Undo |
 | 10. Chat hygiene | 🟡 | Fresh chat each day works. **History screen and startup purge not wired yet** |
 | 11. Profile: categories, backup, CSV | ⬜ | Theme, name, key, clear chat done |
 | 12. Hardening + release | ⬜ | |
 
-Tests: 342 passing (unit, agent, widget). `flutter analyze`: no issues.
+Tests: 384 passing (unit, agent, widget). `flutter analyze`: no issues.
 
 ## Deviations from plan.md
+- **Bugs found by the widget tests and fixed**: a border-with-radius crash on the expense
+  list, amount/category overflow on narrow cards, Apply/Save hidden below the fold in sheets.
 - **Loan and repayment cards have Cancel / Save only** (no Edit sheet). To change one,
   cancel it and say it again. Expense cards have the full Edit sheet.
 - **Business logic never reads through live streams.** Found while testing: a one-off read

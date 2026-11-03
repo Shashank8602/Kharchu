@@ -97,6 +97,9 @@ class LendingRepository {
         .join(' ');
   }
 
+  Future<Person?> personById(int id) =>
+      (db.select(db.people)..where((p) => p.id.equals(id))).getSingleOrNull();
+
   Future<Person?> personByExactName(String name) {
     final key = nameKey(name);
     return (db.select(db.people)..where((p) => p.nameKey.equals(key)))

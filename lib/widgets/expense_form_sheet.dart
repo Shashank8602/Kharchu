@@ -101,15 +101,21 @@ class _ExpenseSheet extends StatefulWidget {
 
 class _ExpenseSheetState extends State<_ExpenseSheet> {
   late final TextEditingController _amount = TextEditingController(
-      text: widget.amountPaise == null
-          ? ''
-          : (widget.amountPaise! % 100 == 0
+    text: widget.amountPaise == null
+        ? ''
+        : (widget.amountPaise! % 100 == 0
               ? '${widget.amountPaise! ~/ 100}'
-              : (widget.amountPaise! / 100).toStringAsFixed(2)));
-  late final TextEditingController _item = TextEditingController(text: widget.item);
-  late final TextEditingController _location =
-      TextEditingController(text: widget.location ?? '');
-  late int? _category = widget.newCategoryName != null ? kNewCategoryId : widget.categoryId;
+              : (widget.amountPaise! / 100).toStringAsFixed(2)),
+  );
+  late final TextEditingController _item = TextEditingController(
+    text: widget.item,
+  );
+  late final TextEditingController _location = TextEditingController(
+    text: widget.location ?? '',
+  );
+  late int? _category = widget.newCategoryName != null
+      ? kNewCategoryId
+      : widget.categoryId;
   late String? _payment = widget.paymentMethod;
   late String _date = widget.spentOn;
   String? _amountError;
@@ -186,83 +192,112 @@ class _ExpenseSheetState extends State<_ExpenseSheet> {
     final kc = context.kc;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return SafeArea(
-      child: SingleChildScrollView(
+      child: Padding(
         padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.title, style: headingStyle(size: 19, color: kc.ink)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _amount,
-              autofocus: widget.amountPaise == null,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                prefixText: '₹ ',
-                errorText: _amountError,
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: headingStyle(size: 19, color: kc.ink),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _amount,
+                      autofocus: widget.amountPaise == null,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '₹ ',
+                        errorText: _amountError,
+                      ),
+                      onChanged: (_) => setState(() => _amountError = null),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _item,
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLength: 60,
+                      decoration: InputDecoration(
+                        labelText: 'What for',
+                        counterText: '',
+                        errorText: _itemError,
+                      ),
+                      onChanged: (_) => setState(() => _itemError = null),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<int>(
+                      initialValue: _category,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: 'Category',
+                        errorText: _categoryError,
+                      ),
+                      items: [
+                        if (widget.newCategoryName != null)
+                          DropdownMenuItem(
+                            value: kNewCategoryId,
+                            child: Text('${widget.newCategoryName} (new)'),
+                          ),
+                        for (final c in widget.categories)
+                          DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      ],
+                      onChanged: (v) => setState(() {
+                        _category = v;
+                        _categoryError = null;
+                      }),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _location,
+                      textCapitalization: TextCapitalization.words,
+                      maxLength: 60,
+                      decoration: const InputDecoration(
+                        labelText: 'Place (optional)',
+                        counterText: '',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Paid with',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: kc.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final m in _methods)
+                          ChoiceChip(
+                            label: Text(m.$2),
+                            selected: _payment == m.$1,
+                            onSelected: (on) =>
+                                setState(() => _payment = on ? m.$1 : null),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _pickDate,
+                      icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                      label: Text(friendlyDate(_date, widget.todayIso)),
+                    ),
+                  ],
+                ),
               ),
-              onChanged: (_) => setState(() => _amountError = null),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _item,
-              textCapitalization: TextCapitalization.sentences,
-              maxLength: 60,
-              decoration: InputDecoration(
-                labelText: 'What for',
-                counterText: '',
-                errorText: _itemError,
-              ),
-              onChanged: (_) => setState(() => _itemError = null),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
-              initialValue: _category,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: 'Category', errorText: _categoryError),
-              items: [
-                if (widget.newCategoryName != null)
-                  DropdownMenuItem(
-                      value: kNewCategoryId, child: Text('${widget.newCategoryName} (new)')),
-                for (final c in widget.categories)
-                  DropdownMenuItem(value: c.id, child: Text(c.name)),
-              ],
-              onChanged: (v) => setState(() {
-                _category = v;
-                _categoryError = null;
-              }),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _location,
-              textCapitalization: TextCapitalization.words,
-              maxLength: 60,
-              decoration: const InputDecoration(labelText: 'Place (optional)', counterText: ''),
             ),
             const SizedBox(height: 16),
-            Text('Paid with', style: TextStyle(fontWeight: FontWeight.w600, color: kc.ink)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final m in _methods)
-                  ChoiceChip(
-                    label: Text(m.$2),
-                    selected: _payment == m.$1,
-                    onSelected: (on) => setState(() => _payment = on ? m.$1 : null),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _pickDate,
-              icon: const Icon(Icons.calendar_today_outlined, size: 18),
-              label: Text(friendlyDate(_date, widget.todayIso)),
-            ),
-            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
@@ -274,7 +309,10 @@ class _ExpenseSheetState extends State<_ExpenseSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   flex: 2,
-                  child: FilledButton(onPressed: _save, child: Text(widget.actionLabel)),
+                  child: FilledButton(
+                    onPressed: _save,
+                    child: Text(widget.actionLabel),
+                  ),
                 ),
               ],
             ),

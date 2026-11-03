@@ -8,6 +8,7 @@ import 'features/chat/chat_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/profile/groq_settings_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/transactions/person_detail_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'providers.dart';
 
@@ -26,8 +27,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-                path: '/transactions',
-                builder: (_, _) => const TransactionsScreen()),
+              path: '/transactions',
+              builder: (_, _) => const TransactionsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'person/:id',
+                  builder: (_, state) => PersonDetailScreen(
+                    // a bad id shows "Not found" instead of crashing
+                    personId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
+                  ),
+                ),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: '/budgets', builder: (_, _) => const BudgetsScreen()),
