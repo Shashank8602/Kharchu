@@ -41,13 +41,20 @@ void main() {
 
     harnessTest('each tab switches the screen', (tester) async {
       await start(tester);
-      for (final t in ['Dashboard', 'Transactions', 'Budgets']) {
+      Future<void> tab(String name) async {
         await tester.tap(find.descendant(
-            of: find.byType(NavigationBar), matching: find.text(t)));
+            of: find.byType(NavigationBar), matching: find.text(name)));
         await tester.pumpAndSettle();
-        expect(find.descendant(of: find.byType(AppBar), matching: find.text(t)),
-            findsOneWidget, reason: t);
       }
+
+      await tab('Dashboard');
+      expect(find.text('October'), findsOneWidget); // the month is the title
+      await tab('Transactions');
+      expect(find.text('Expenses'), findsOneWidget);
+      expect(find.text('Lending'), findsOneWidget);
+      await tab('Budgets');
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Budgets')),
+          findsOneWidget);
       await openProfile(tester);
       expect(find.text('Theme'), findsOneWidget);
     });
