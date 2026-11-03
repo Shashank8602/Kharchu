@@ -74,6 +74,11 @@ class CategoryRepository {
         ..orderBy([(c) => OrderingTerm.asc(c.id)]))
       .get();
 
+  /// Every category, archived ones too (for showing names on old expenses).
+  Future<List<Category>> all() => (db.select(db.categories)
+        ..orderBy([(c) => OrderingTerm.asc(c.id)]))
+      .get();
+
   Stream<List<Category>> watchAll() => (db.select(db.categories)
         ..orderBy([
           (c) => OrderingTerm.asc(c.isArchived),

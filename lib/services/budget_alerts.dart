@@ -56,7 +56,7 @@ class BudgetAlerts {
   ) async {
     final all = await budgets.all();
     if (all.isEmpty) return const [];
-    final names = {for (final c in await categories.watchAll().first) c.id: c.name};
+    final names = {for (final c in await categories.all()) c.id: c.name};
     final daysLeft = daysLeftInMonth(todayIso);
     final out = <BudgetNotice>[];
 

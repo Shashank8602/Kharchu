@@ -89,3 +89,13 @@ String fullDateLabel(String iso) {
 
 /// 'October'
 String monthName(String iso) => _monthsFull[tryParseIso(iso)!.month - 1];
+
+/// 'Today', 'Yesterday', or 'Sat, 18 Oct' (with the year when it differs).
+String friendlyDate(String iso, String todayIso) {
+  if (iso == todayIso) return 'Today';
+  if (iso == addDays(todayIso, -1)) return 'Yesterday';
+  final d = tryParseIso(iso);
+  final t = tryParseIso(todayIso);
+  if (d == null || t == null) return iso;
+  return d.year == t.year ? dayLabel(iso) : '${dayLabel(iso)} ${d.year}';
+}

@@ -170,7 +170,7 @@ class QueryEngine {
   }
 
   Future<List<Category>> _archived() async =>
-      (await categories.watchAll().first).where((c) => c.isArchived).toList();
+      (await categories.all()).where((c) => c.isArchived).toList();
 
   List<Map<String, dynamic>> _grouped(Map<String, int> sums, {int? limit}) {
     final rows = sums.entries.toList()..sort((x, y) => y.value.compareTo(x.value));

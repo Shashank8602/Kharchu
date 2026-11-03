@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kharchu/data/db/app_database.dart';
@@ -30,7 +31,7 @@ void main() {
   }
 
   group('shell', () {
-    testWidgets('opens on Chat and shows five tabs', (tester) async {
+    harnessTest('opens on Chat and shows five tabs', (tester) async {
       await start(tester);
       final nav = find.byType(NavigationBar);
       for (final t in ['Chat', 'Dashboard', 'Transactions', 'Budgets', 'Profile']) {
@@ -38,7 +39,7 @@ void main() {
       }
     });
 
-    testWidgets('each tab switches the screen', (tester) async {
+    harnessTest('each tab switches the screen', (tester) async {
       await start(tester);
       for (final t in ['Dashboard', 'Transactions', 'Budgets']) {
         await tester.tap(find.descendant(
@@ -51,7 +52,7 @@ void main() {
       expect(find.text('Theme'), findsOneWidget);
     });
 
-    testWidgets('tapping the active tab again does not break navigation', (tester) async {
+    harnessTest('tapping the active tab again does not break navigation', (tester) async {
       await start(tester);
       await openProfile(tester);
       await tester.tap(find.descendant(
@@ -62,20 +63,20 @@ void main() {
   });
 
   group('profile', () {
-    testWidgets('shows default name and "Not set" when there is no key', (tester) async {
+    harnessTest('shows default name and "Not set" when there is no key', (tester) async {
       await start(tester);
       await openProfile(tester);
       expect(find.text('You'), findsOneWidget);
       expect(find.text('Not set'), findsOneWidget);
     });
 
-    testWidgets('shows "Connected" when a key is saved', (tester) async {
+    harnessTest('shows "Connected" when a key is saved', (tester) async {
       await start(tester, key: 'gsk_abcdefghijklmnopqrstuvwxyz');
       await openProfile(tester);
       expect(find.text('Connected'), findsOneWidget);
     });
 
-    testWidgets('theme switch changes brightness and is remembered', (tester) async {
+    harnessTest('theme switch changes brightness and is remembered', (tester) async {
       await start(tester);
       await openProfile(tester);
       Brightness current() =>
@@ -92,19 +93,19 @@ void main() {
       expect(h.prefs.getString('theme_mode'), 'light');
     });
 
-    testWidgets('a saved dark theme is applied on the next launch', (tester) async {
+    harnessTest('a saved dark theme is applied on the next launch', (tester) async {
       await start(tester, prefs: {'theme_mode': 'dark'});
       expect(Theme.of(tester.element(find.byType(Scaffold).first)).brightness,
           Brightness.dark);
     });
 
-    testWidgets('a corrupted theme value falls back to system, not a crash', (tester) async {
+    harnessTest('a corrupted theme value falls back to system, not a crash', (tester) async {
       await start(tester, prefs: {'theme_mode': 'purple'});
       await openProfile(tester);
       expect(find.text('Theme'), findsOneWidget);
     });
 
-    testWidgets('editing the name updates the avatar and persists', (tester) async {
+    harnessTest('editing the name updates the avatar and persists', (tester) async {
       await start(tester);
       await openProfile(tester);
       await tester.tap(find.byTooltip('Edit name'));
@@ -117,7 +118,7 @@ void main() {
       expect(h.prefs.getString('profile_name'), 'Shashank');
     });
 
-    testWidgets('an empty name is ignored', (tester) async {
+    harnessTest('an empty name is ignored', (tester) async {
       await start(tester, prefs: {'profile_name': 'Asha'});
       await openProfile(tester);
       await tester.tap(find.byTooltip('Edit name'));
@@ -128,31 +129,60 @@ void main() {
       expect(find.text('Asha'), findsOneWidget);
     });
 
-    testWidgets('clear chat: cancel keeps messages, confirm removes only chat',
-        (tester) async {
-      await start(tester);
+    // Database setup happens before the app starts and checks happen after it
+    // is torn down: reading through runAsync while the Chat screen's live
+    // query is active can deadlock against the fake clock.
+    Future<void> seedChatAndExpense(WidgetTester tester) async {
       await tester.runAsync(() async {
         await h.db.into(h.db.chatMessages).insert(ChatMessagesCompanion.insert(
-            id: 'a', day: '2026-10-24', role: 'user'));
+            id: 'a', day: '2026-10-24', role: 'user', body: const Value('hello')));
         final cat = (await h.db.select(h.db.categories).get()).first;
         await h.db.into(h.db.expenses).insert(ExpensesCompanion.insert(
             amountPaise: 1000, categoryId: cat.id, item: 'Tea', spentOn: '2026-10-24'));
       });
-      await openProfile(tester);
+    }
 
+    Future<(int, int)> countsAfterShutdown(WidgetTester tester) async {
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 10));
+      final r = await tester.runAsync(() async => (
+            (await h.db.select(h.db.chatMessages).get()).length,
+            (await h.db.select(h.db.expenses).get()).length,
+          ));
+      return r!;
+    }
+
+    harnessTest('clear chat: Cancel keeps the messages', (tester) async {
+      h = await Harness.create();
+      await seedChatAndExpense(tester);
+      tester.view.physicalSize = const Size(1080, 2200);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(h.app());
+      await tester.pumpAndSettle();
+      await openProfile(tester);
       await tester.tap(find.text('Clear chat history'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
-      expect(await tester.runAsync(() => h.db.select(h.db.chatMessages).get()), hasLength(1));
+      expect(await countsAfterShutdown(tester), (1, 1));
+    });
 
+    harnessTest('clear chat: Clear removes chat text but keeps expenses', (tester) async {
+      h = await Harness.create();
+      await seedChatAndExpense(tester);
+      tester.view.physicalSize = const Size(1080, 2200);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(h.app());
+      await tester.pumpAndSettle();
+      await openProfile(tester);
       await tester.tap(find.text('Clear chat history'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Clear'));
       await tester.pumpAndSettle();
-      expect(await tester.runAsync(() => h.db.select(h.db.chatMessages).get()), isEmpty);
-      expect(await tester.runAsync(() => h.db.select(h.db.expenses).get()), hasLength(1));
       expect(find.text('Chat history cleared'), findsOneWidget);
+      expect(await countsAfterShutdown(tester), (0, 1));
     });
   });
 
@@ -163,7 +193,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('empty key asks for one and saves nothing', (tester) async {
+    harnessTest('empty key asks for one and saves nothing', (tester) async {
       await start(tester);
       await openGroq(tester);
       await tester.tap(find.text('Save and test'));
@@ -173,7 +203,7 @@ void main() {
       expect(h.adapter.requests, isEmpty);
     });
 
-    testWidgets('a good key is saved, tested and shown as connected', (tester) async {
+    harnessTest('a good key is saved, tested and shown as connected', (tester) async {
       await start(tester);
       h.adapter.script.add((_) => json({'data': []}));
       await openGroq(tester);
@@ -186,7 +216,7 @@ void main() {
       expect(find.text('gsk_abcdefghijklmnopqrstuvwxyz'), findsNothing);
     });
 
-    testWidgets('a whole .env line, quotes and spaces are cleaned before saving',
+    harnessTest('a whole .env line, quotes and spaces are cleaned before saving',
         (tester) async {
       await start(tester);
       h.adapter.script.add((_) => json({'data': []}));
@@ -196,7 +226,7 @@ void main() {
       expect(await h.keys.read(), 'gsk_abcdefghijklmnopqrstuvwxyz');
     });
 
-    testWidgets('a rejected key is not kept', (tester) async {
+    harnessTest('a rejected key is not kept', (tester) async {
       await start(tester);
       h.adapter.script.add((_) => errorBody(401, 'Invalid API Key'));
       await openGroq(tester);
@@ -205,7 +235,7 @@ void main() {
       expect(await h.keys.read(), isNull);
     });
 
-    testWidgets('offline: the key is kept and the user is told it was not tested',
+    harnessTest('offline: the key is kept and the user is told it was not tested',
         (tester) async {
       await start(tester);
       h.adapter.script.add((o) => throw DioExceptionShim.offline(o));
@@ -215,7 +245,7 @@ void main() {
       expect(await h.keys.read(), 'gsk_abcdefghijklmnopqrstuvwxyz');
     });
 
-    testWidgets('a key that does not look like Groq gets a warning but can still be saved',
+    harnessTest('a key that does not look like Groq gets a warning but can still be saved',
         (tester) async {
       await start(tester);
       await openGroq(tester);
@@ -224,7 +254,7 @@ void main() {
       expect(find.textContaining('start with gsk_'), findsOneWidget);
     });
 
-    testWidgets('the key can be removed', (tester) async {
+    harnessTest('the key can be removed', (tester) async {
       await start(tester, key: 'gsk_abcdefghijklmnopqrstuvwxyz');
       await openGroq(tester);
       await tester.tap(find.text('Remove'));
@@ -233,7 +263,7 @@ void main() {
       expect(find.text('Remove'), findsNothing);
     });
 
-    testWidgets('the key field is hidden until the eye is tapped', (tester) async {
+    harnessTest('the key field is hidden until the eye is tapped', (tester) async {
       await start(tester);
       await openGroq(tester);
       EditableText field() => tester.widget<EditableText>(find.byType(EditableText).first);
@@ -243,7 +273,7 @@ void main() {
       expect(field().obscureText, isFalse);
     });
 
-    testWidgets('models can be changed, saved and reset', (tester) async {
+    harnessTest('models can be changed, saved and reset', (tester) async {
       await start(tester);
       await openGroq(tester);
       await tester.scrollUntilVisible(find.text('Save models'), 300,
@@ -260,7 +290,7 @@ void main() {
       expect(h.prefs.getString('chat_model'), 'openai/gpt-oss-120b');
     });
 
-    testWidgets('an empty fallback model means "no fallback" and survives a restart',
+    harnessTest('an empty fallback model means "no fallback" and survives a restart',
         (tester) async {
       await start(tester);
       await openGroq(tester);
@@ -281,7 +311,7 @@ void main() {
       expect(fb.controller!.text, isEmpty);
     });
 
-    testWidgets('voice language is remembered', (tester) async {
+    harnessTest('voice language is remembered', (tester) async {
       await start(tester);
       await openGroq(tester);
       await tester.scrollUntilVisible(find.text('Kannada'), 300,
