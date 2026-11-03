@@ -327,6 +327,38 @@ void main() {
     });
   });
 
+  group('Groq rejects a tool call from the model', () {
+    test('the problem is explained to the model, which then succeeds', () async {
+      t.adapter.script.add((_) => errorBody(
+          400, 'tool call validation failed: parameters for tool query_spending did not match schema'));
+      t.callTool('propose_add_expense', addArgs());
+      final r = await t.agent.handle('chats 1000');
+      expect(r, isA<AgentCard>());
+      final retry = t.sentMessages(1).last;
+      expect(retry['role'], 'user');
+      expect(retry['content'], contains('rejected'));
+      expect(retry['content'], contains('did not match schema'));
+    });
+
+    test('a very long Groq message is shortened before it is sent back', () async {
+      t.adapter.script.add((_) => errorBody(400, 'x' * 2000));
+      t.say('ok');
+      await t.agent.handle('hi');
+      expect((t.sentMessages(1).last['content'] as String).length, lessThan(450));
+    });
+
+    test('if it keeps happening the user gets a plain message, after a bounded number of tries',
+        () async {
+      for (var i = 0; i < 6; i++) {
+        t.adapter.script.add((_) => errorBody(400, 'tool call validation failed'));
+      }
+      final r = await t.agent.handle('hi');
+      expect(r, isA<AgentFailure>());
+      expect(t.adapter.requests.length, 4, reason: 'never more than four rounds');
+      expect((r as AgentFailure).error.userMessage, "Couldn't understand that, try rephrasing.");
+    });
+  });
+
   group('Groq trouble', () {
     test('a rejected key is reported and the user message is kept once', () async {
       t.adapter.script.add((_) => errorBody(401, 'bad key'));

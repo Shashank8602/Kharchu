@@ -58,7 +58,7 @@ final List<Map<String, dynamic>> toolSchemas = [
   ),
   _tool(
     'find_loans',
-    'List lent/borrowed money, with outstanding balance.',
+    'List lent/borrowed money with outstanding balance. Omit direction unless the user said who owes whom.',
     {
       'person': _s,
       'direction': {

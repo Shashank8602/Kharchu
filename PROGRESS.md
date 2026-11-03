@@ -16,9 +16,9 @@ Status key: ✅ done and tested · 🟡 done, partly verified · ⬜ not started
 | 9. Dashboard + Transactions | ✅ | Month navigation, donut, daily bars, search, filters, edit, swipe-delete with Undo |
 | 10. Chat hygiene | ✅ | Fresh chat each day, History screen, 30-day purge on startup (entries never purged) |
 | 11. Profile: categories, backup, CSV | ✅ | Backup/restore through the system dialog (Drive available), validated restore, CSV with BOM + formula-injection guard, Categories screen |
-| 12. Hardening + release | ⬜ | |
+| 12. Hardening + release | ✅ | Signed APK, README, live AI check, GitHub pre-release |
 
-Tests: 463 passing (unit, agent, widget). `flutter analyze`: no issues.
+Tests: 466 passing (+1 opt-in live AI check) (unit, agent, widget). `flutter analyze`: no issues.
 
 ## Deviations from plan.md
 - **Android manifest**: added `INTERNET` and `RECORD_AUDIO` (Flutter's template only has
@@ -67,3 +67,26 @@ Chat: same-second ordering, 30-day purge keeps expenses/loans/budgets.
 
 ## Not verifiable overnight (needs a real phone)
 Microphone and Kannada speech, Android "Save to Google Drive" dialog, on-device look.
+
+## Release status
+- Release APK is built and signed with a private release key kept outside the repo
+  (`%USERPROFILE%\.kharchu-keystore\`). **Back that folder up**; without it a future version
+  cannot be installed over this one.
+- **Never run on a physical Android phone.** All behaviour was checked by unit tests, widget
+  tests (with a fake microphone and fake file dialogs) and a live call to the Groq API.
+- Live AI accuracy: see below.
+
+## Live AI check (real Groq API, `openai/gpt-oss-120b`, 2026-11-04)
+30 messages: 16 spending (8 English-only variety + 5 Kannada), 5 lending, 3 edit/delete, 4
+questions, 1 budget, 1 off-topic. Every field of every result is checked (amount, category,
+item, place, payment, date, ids).
+
+- **First run: 28 of 30 correct (93%). Kannada: 7 of 7.** Replies were in English every time.
+- The two misses were real bugs in my code, now fixed:
+  1. "paid back Priya 500": the model guessed the loan direction when searching and found
+     nothing. The prompt now says never to guess it.
+  2. "top 3 categories this month": Groq rejected the model's tool call with HTTP 400 and the
+     turn ended in an error. The app now tells the model what was wrong and lets it retry.
+- After the fixes I re-ran **only those two cases: both passed.** The other 28 were not run
+  again after the prompt change, so the figure above is the honest overall number.
+- A 30-case sample is a smoke test, not a guarantee. Real phrasing varies more.
