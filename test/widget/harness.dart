@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
@@ -10,6 +12,7 @@ import 'package:kharchu/core/theme.dart';
 import 'package:kharchu/data/db/app_database.dart';
 import 'package:kharchu/data/key_store.dart';
 import 'package:kharchu/providers.dart';
+import 'package:kharchu/services/file_gateway.dart';
 import 'package:kharchu/services/groq/groq_client.dart';
 import 'package:kharchu/services/groq/rate_limiter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +29,9 @@ class Harness {
   final FakeAdapter adapter;
   final AppDatabase db;
   final DateTime now;
+
+  /// Stands in for Android's Save and Open dialogs.
+  final FakeGateway files = FakeGateway();
 
   static Future<Harness> create({
     Map<String, Object> prefs = const {},
@@ -63,6 +69,7 @@ class Harness {
         keyStoreProvider.overrideWithValue(keys),
         groqClientProvider.overrideWithValue(groq),
         clockProvider.overrideWithValue(clock),
+        fileGatewayProvider.overrideWithValue(files),
       ];
 
   List<Override> get overrides => overridesWith(() => now);
@@ -80,4 +87,30 @@ void harnessTest(String name, Future<void> Function(WidgetTester tester) body) {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
   });
+}
+
+/// Records what the app tries to save, and hands back whatever file a test
+/// chooses to "pick".
+class FakeGateway implements FileGateway {
+  final saved = <({String name, Uint8List bytes, String mime})>[];
+
+  /// What the Save dialog returns: false means the user cancelled.
+  bool saveResult = true;
+
+  /// What the Open dialog returns: null means the user cancelled.
+  Uint8List? toPick;
+
+  @override
+  Future<bool> save({
+    required String fileName,
+    required Uint8List bytes,
+    required String mimeType,
+    String? dialogTitle,
+  }) async {
+    if (saveResult) saved.add((name: fileName, bytes: bytes, mime: mimeType));
+    return saveResult;
+  }
+
+  @override
+  Future<Uint8List?> pick({String? dialogTitle}) async => toPick;
 }

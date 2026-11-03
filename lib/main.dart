@@ -12,6 +12,15 @@ Future<void> main() async {
   final container = ProviderContainer(
     overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
   );
-  await container.read(settingsProvider.notifier).ensureSince(todayIst());
-  runApp(UncontrolledProviderScope(container: container, child: const KharchuApp()));
+  final today = todayIst();
+  await container.read(settingsProvider.notifier).ensureSince(today);
+  try {
+    // chat text older than 30 days goes; entries, loans and budgets never do
+    await container.read(chatRepoProvider).purgeOlderThan(today);
+  } catch (_) {
+    // a failed tidy-up must never stop the app from opening
+  }
+  runApp(
+    UncontrolledProviderScope(container: container, child: const KharchuApp()),
+  );
 }

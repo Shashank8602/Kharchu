@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'core/theme.dart';
 import 'features/budgets/budgets_screen.dart';
 import 'features/chat/chat_screen.dart';
+import 'features/chat/history_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/profile/categories_screen.dart';
 import 'features/profile/groq_settings_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/transactions/person_detail_screen.dart';
@@ -20,7 +22,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, shell) => AppShell(shell: shell),
         branches: [
           StatefulShellBranch(routes: [
-            GoRoute(path: '/chat', builder: (_, _) => const ChatScreen()),
+            GoRoute(
+              path: '/chat',
+              builder: (_, _) => const ChatScreen(),
+              routes: [
+                GoRoute(path: 'history', builder: (_, _) => const HistoryScreen()),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: '/dashboard', builder: (_, _) => const DashboardScreen()),
@@ -51,6 +59,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                     path: 'groq',
                     builder: (_, _) => const GroqSettingsScreen()),
+                GoRoute(
+                    path: 'categories',
+                    builder: (_, _) => const CategoriesScreen()),
               ],
             ),
           ]),

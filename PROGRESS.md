@@ -14,11 +14,11 @@ Status key: ✅ done and tested · 🟡 done, partly verified · ⬜ not started
 | 7. Budgets + alerts | ✅ | Chat alerts and the Budgets screen (add, edit, delete, statuses) |
 | 8. Voice | ⬜ | |
 | 9. Dashboard + Transactions | ✅ | Month navigation, donut, daily bars, search, filters, edit, swipe-delete with Undo |
-| 10. Chat hygiene | 🟡 | Fresh chat each day works. **History screen and startup purge not wired yet** |
-| 11. Profile: categories, backup, CSV | ⬜ | Theme, name, key, clear chat done |
+| 10. Chat hygiene | ✅ | Fresh chat each day, History screen, 30-day purge on startup (entries never purged) |
+| 11. Profile: categories, backup, CSV | ✅ | Backup/restore through the system dialog (Drive available), validated restore, CSV with BOM + formula-injection guard, Categories screen |
 | 12. Hardening + release | ⬜ | |
 
-Tests: 384 passing (unit, agent, widget). `flutter analyze`: no issues.
+Tests: 444 passing (unit, agent, widget). `flutter analyze`: no issues.
 
 ## Deviations from plan.md
 - **Bugs found by the widget tests and fixed**: a border-with-radius crash on the expense
