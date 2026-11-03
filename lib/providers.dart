@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/dates.dart';
 import 'data/db/app_database.dart';
 import 'data/key_store.dart';
 import 'data/repositories/budget_repository.dart';
@@ -10,6 +11,10 @@ import 'data/repositories/chat_repository.dart';
 import 'data/repositories/expense_repository.dart';
 import 'data/repositories/lending_repository.dart';
 import 'data/settings_store.dart';
+import 'services/agent/agent_service.dart';
+import 'services/agent/tool_executor.dart';
+import 'services/budget_alerts.dart';
+import 'services/card_actions.dart';
 import 'services/groq/groq_client.dart';
 
 /// Overridden in main() once SharedPreferences has loaded.
@@ -100,3 +105,45 @@ final groqClientProvider = Provider<GroqClient>((ref) {
 
 /// The clock. Tests override this to pin "now".
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Today's date in IST, read fresh each time so it is right after midnight.
+final todayFnProvider = Provider<String Function()>((ref) {
+  final clock = ref.watch(clockProvider);
+  return () => todayIst(clock());
+});
+
+final toolExecutorProvider = Provider((ref) => ToolExecutor(
+      expenses: ref.watch(expenseRepoProvider),
+      categories: ref.watch(categoryRepoProvider),
+      budgets: ref.watch(budgetRepoProvider),
+      lending: ref.watch(lendingRepoProvider),
+      today: ref.watch(todayFnProvider),
+    ));
+
+final budgetAlertsProvider = Provider((ref) => BudgetAlerts(
+      expenses: ref.watch(expenseRepoProvider),
+      budgets: ref.watch(budgetRepoProvider),
+      categories: ref.watch(categoryRepoProvider),
+    ));
+
+final agentServiceProvider = Provider((ref) => AgentService(
+      groq: ref.watch(groqClientProvider),
+      chat: ref.watch(chatRepoProvider),
+      executor: ref.watch(toolExecutorProvider),
+      expenses: ref.watch(expenseRepoProvider),
+      categories: ref.watch(categoryRepoProvider),
+      lending: ref.watch(lendingRepoProvider),
+      today: ref.watch(todayFnProvider),
+    ));
+
+final cardActionsProvider = Provider((ref) => CardActions(
+      db: ref.watch(databaseProvider),
+      expenses: ref.watch(expenseRepoProvider),
+      categories: ref.watch(categoryRepoProvider),
+      budgets: ref.watch(budgetRepoProvider),
+      lending: ref.watch(lendingRepoProvider),
+      chat: ref.watch(chatRepoProvider),
+      executor: ref.watch(toolExecutorProvider),
+      alerts: ref.watch(budgetAlertsProvider),
+      today: ref.watch(todayFnProvider),
+    ));
