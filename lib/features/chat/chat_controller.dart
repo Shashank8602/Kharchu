@@ -17,21 +17,33 @@ class TodayNotifier extends Notifier<String> {
   }
 }
 
-final todayProvider = NotifierProvider<TodayNotifier, String>(TodayNotifier.new);
+final todayProvider = NotifierProvider<TodayNotifier, String>(
+  TodayNotifier.new,
+);
 
 /// Today's messages, live.
-final chatMessagesProvider = StreamProvider.autoDispose<List<ChatMessage>>((ref) {
+final chatMessagesProvider = StreamProvider.autoDispose<List<ChatMessage>>((
+  ref,
+) {
   final day = ref.watch(todayProvider);
   return ref.watch(chatRepoProvider).watchDay(day);
 });
 
 class ChatState {
-  const ChatState({this.sending = false, this.error, this.failedText});
+  const ChatState({
+    this.sending = false,
+    this.error,
+    this.failedText,
+    this.failedSource = 'chat',
+  });
   final bool sending;
 
   /// Set when the last message could not be handled.
   final GroqException? error;
   final String? failedText;
+
+  /// 'chat' or 'voice', kept so Retry records the same source.
+  final String failedSource;
 
   /// An error that is not Groq's (for example the database), shown generically.
   bool get hasError => error != null;
@@ -41,37 +53,50 @@ class ChatController extends Notifier<ChatState> {
   @override
   ChatState build() => const ChatState();
 
-  Future<void> send(String text) async {
+  Future<void> send(String text, {String source = 'chat'}) async {
     final t = text.trim();
     if (t.isEmpty || state.sending) return;
-    await _run(t, alreadyStored: false);
+    await _run(t, source: source, alreadyStored: false);
   }
 
   /// Runs the failed message again without adding it to the chat twice.
   Future<void> retry() async {
     final t = state.failedText;
     if (t == null || state.sending) return;
-    await _run(t, alreadyStored: true);
+    await _run(t, source: state.failedSource, alreadyStored: true);
   }
 
   void dismissError() => state = const ChatState();
 
-  Future<void> _run(String text, {required bool alreadyStored}) async {
+  Future<void> _run(
+    String text, {
+    required String source,
+    required bool alreadyStored,
+  }) async {
     state = const ChatState(sending: true);
     try {
       final reply = await ref
           .read(agentServiceProvider)
-          .handle(text, alreadyStored: alreadyStored);
+          .handle(text, source: source, alreadyStored: alreadyStored);
       state = reply is AgentFailure
-          ? ChatState(error: reply.error, failedText: text)
+          ? ChatState(
+              error: reply.error,
+              failedText: text,
+              failedSource: source,
+            )
           : const ChatState();
     } catch (_) {
       // Anything unexpected (a database error, say) must not leave the
       // composer stuck on "sending".
-      state = ChatState(error: const GroqBadResponse('unexpected'), failedText: text);
+      state = ChatState(
+        error: const GroqBadResponse('unexpected'),
+        failedText: text,
+        failedSource: source,
+      );
     }
   }
 }
 
-final chatControllerProvider =
-    NotifierProvider<ChatController, ChatState>(ChatController.new);
+final chatControllerProvider = NotifierProvider<ChatController, ChatState>(
+  ChatController.new,
+);

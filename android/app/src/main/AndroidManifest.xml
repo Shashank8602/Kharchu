@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Needed by release builds to reach the Groq API (debug builds get it
+         from the debug manifest, which is why this is easy to miss). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Voice input: the microphone is only used while the user is recording. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="kharchu"
+        android:label="Kharchu"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -12,15 +12,18 @@ Status key: ✅ done and tested · 🟡 done, partly verified · ⬜ not started
 | 5. Questions | ✅ | Spending and lending queries with exact figures |
 | 6. Lending | ✅ | Chat cards, Lending tab (open/settled, net per person), person screen with repayments |
 | 7. Budgets + alerts | ✅ | Chat alerts and the Budgets screen (add, edit, delete, statuses) |
-| 8. Voice | ⬜ | |
+| 8. Voice | 🟡 | Record, 60 s cap, Whisper transcript sent like a typed message, all failure paths tested with a fake microphone. **Not tried with a real microphone or real Kannada speech** |
 | 9. Dashboard + Transactions | ✅ | Month navigation, donut, daily bars, search, filters, edit, swipe-delete with Undo |
 | 10. Chat hygiene | ✅ | Fresh chat each day, History screen, 30-day purge on startup (entries never purged) |
 | 11. Profile: categories, backup, CSV | ✅ | Backup/restore through the system dialog (Drive available), validated restore, CSV with BOM + formula-injection guard, Categories screen |
 | 12. Hardening + release | ⬜ | |
 
-Tests: 444 passing (unit, agent, widget). `flutter analyze`: no issues.
+Tests: 463 passing (unit, agent, widget). `flutter analyze`: no issues.
 
 ## Deviations from plan.md
+- **Android manifest**: added `INTERNET` and `RECORD_AUDIO` (Flutter's template only has
+  INTERNET in debug builds, so a release APK could not reach Groq). Removed the unused
+  `permission_handler` and `share_plus` packages.
 - **Bugs found by the widget tests and fixed**: a border-with-radius crash on the expense
   list, amount/category overflow on narrow cards, Apply/Save hidden below the fold in sheets.
 - **Loan and repayment cards have Cancel / Save only** (no Edit sheet). To change one,

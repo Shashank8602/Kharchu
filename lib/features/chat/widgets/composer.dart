@@ -80,8 +80,10 @@ class ComposerState extends State<Composer> {
                 decoration: InputDecoration(
                   hintText: 'What did you spend?',
                   counterText: '',
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(26),
                     borderSide: BorderSide(color: kc.line),

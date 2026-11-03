@@ -19,7 +19,9 @@ class UserBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
@@ -31,7 +33,10 @@ class UserBubble extends StatelessWidget {
               bottomRight: Radius.circular(4),
             ),
           ),
-          child: Text(text, style: TextStyle(color: kc.onAccent, fontSize: 15, height: 1.35)),
+          child: Text(
+            text,
+            style: TextStyle(color: kc.onAccent, fontSize: 15, height: 1.35),
+          ),
         ),
       ),
     );
@@ -48,7 +53,9 @@ class AssistantBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.86),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.86,
+        ),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
@@ -61,7 +68,10 @@ class AssistantBubble extends StatelessWidget {
               bottomRight: Radius.circular(18),
             ),
           ),
-          child: Text(text, style: TextStyle(color: kc.ink, fontSize: 15, height: 1.4)),
+          child: Text(
+            text,
+            style: TextStyle(color: kc.ink, fontSize: 15, height: 1.4),
+          ),
         ),
       ),
     );
@@ -70,7 +80,8 @@ class AssistantBubble extends StatelessWidget {
 
 /// Shown while the model is working.
 class ThinkingBubble extends StatelessWidget {
-  const ThinkingBubble({super.key});
+  const ThinkingBubble({super.key, this.label = 'Thinking…'});
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +95,7 @@ class ThinkingBubble extends StatelessWidget {
           border: Border.all(color: kc.line),
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Text('Thinking…', style: TextStyle(color: kc.muted, fontSize: 14)),
+        child: Text(label, style: TextStyle(color: kc.muted, fontSize: 14)),
       ),
     );
   }
@@ -92,7 +103,12 @@ class ThinkingBubble extends StatelessWidget {
 
 /// The error row: what went wrong, with Retry and/or Open Profile.
 class ErrorBubble extends StatelessWidget {
-  const ErrorBubble({super.key, required this.error, this.onRetry, this.onDismiss});
+  const ErrorBubble({
+    super.key,
+    required this.error,
+    this.onRetry,
+    this.onDismiss,
+  });
   final GroqException error;
   final VoidCallback? onRetry;
   final VoidCallback? onDismiss;
@@ -114,8 +130,13 @@ class ErrorBubble extends StatelessWidget {
               Icon(Icons.error_outline, size: 20, color: kc.dangerInk),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(error.userMessage,
-                    style: TextStyle(color: kc.dangerInk, fontWeight: FontWeight.w600)),
+                child: Text(
+                  error.userMessage,
+                  style: TextStyle(
+                    color: kc.dangerInk,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -126,14 +147,18 @@ class ErrorBubble extends StatelessWidget {
                 if (error.canRetry)
                   FilledButton(
                     style: FilledButton.styleFrom(
-                        backgroundColor: kc.danger, foregroundColor: Colors.white),
+                      backgroundColor: kc.danger,
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: onRetry,
                     child: const Text('Retry'),
                   ),
                 if (error.needsProfile)
                   FilledButton(
                     style: FilledButton.styleFrom(
-                        backgroundColor: kc.danger, foregroundColor: Colors.white),
+                      backgroundColor: kc.danger,
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: () {
                       onDismiss?.call();
                       context.go('/profile/groq');
@@ -170,10 +195,16 @@ class SavedChip extends StatelessWidget {
           Icon(Icons.check, size: 16, color: kc.accent),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(lead,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: kc.ink, fontSize: 14, fontWeight: FontWeight.w600)),
+            child: Text(
+              lead,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: kc.ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           if (trail != null) ...[
             const SizedBox(width: 8),
@@ -185,15 +216,23 @@ class SavedChip extends StatelessWidget {
   }
 
   static (String, String?) _parts(Proposal p) => switch (p) {
-        AddExpenseProposal() => ('${formatINR(p.amountPaise)}  ${p.item}', p.categoryName),
-        UpdateExpenseProposal() => ('Updated · ${p.itemBefore}', null),
-        DeleteExpenseProposal() => ('Deleted · ${formatINR(p.amountPaise)}  ${p.item}', null),
-        SetBudgetProposal() =>
-          ('${p.categoryName} budget · ${formatINR(p.limitPaise)}/month', null),
-        LoanProposal() => (p.summary, null),
-        RepaymentProposal() => (p.summary, null),
-        PickProposal() => (p.summary, null),
-      };
+    AddExpenseProposal() => (
+      '${formatINR(p.amountPaise)}  ${p.item}',
+      p.categoryName,
+    ),
+    UpdateExpenseProposal() => ('Updated · ${p.itemBefore}', null),
+    DeleteExpenseProposal() => (
+      'Deleted · ${formatINR(p.amountPaise)}  ${p.item}',
+      null,
+    ),
+    SetBudgetProposal() => (
+      '${p.categoryName} budget · ${formatINR(p.limitPaise)}/month',
+      null,
+    ),
+    LoanProposal() => (p.summary, null),
+    RepaymentProposal() => (p.summary, null),
+    PickProposal() => (p.summary, null),
+  };
 }
 
 /// A budget warning from the app (not the AI).
@@ -206,21 +245,31 @@ class BudgetNoticeTile extends StatelessWidget {
     final kc = context.kc;
     var danger = false;
     try {
-      danger = (jsonDecode(message.cardPayload ?? '{}') as Map)['level'] == 'danger';
+      danger =
+          (jsonDecode(message.cardPayload ?? '{}') as Map)['level'] == 'danger';
     } catch (_) {}
     final bg = danger ? kc.dangerBg : kc.warnBg;
     final fg = danger ? kc.dangerInk : kc.warnInk;
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.warning_amber_rounded, size: 20, color: fg),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(message.body ?? '',
-                style: TextStyle(color: fg, fontWeight: FontWeight.w600, height: 1.35)),
+            child: Text(
+              message.body ?? '',
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
           ),
         ],
       ),
@@ -235,8 +284,13 @@ class DayLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Text(text,
-            style: TextStyle(
-                fontSize: 12, fontWeight: FontWeight.w600, color: context.kc.muted)),
-      );
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: context.kc.muted,
+      ),
+    ),
+  );
 }

@@ -18,6 +18,7 @@ import 'services/backup_service.dart';
 import 'services/card_actions.dart';
 import 'services/export_service.dart';
 import 'services/file_gateway.dart';
+import 'services/voice_recorder.dart';
 import 'services/groq/groq_client.dart';
 
 /// Overridden in main() once SharedPreferences has loaded.
@@ -158,3 +159,9 @@ final backupServiceProvider =
 
 final exportServiceProvider =
     Provider((ref) => ExportService(ref.watch(expenseRepoProvider)));
+
+final voiceRecorderProvider = Provider<VoiceRecorder>((ref) {
+  final recorder = DeviceVoiceRecorder();
+  ref.onDispose(recorder.dispose);
+  return recorder;
+});
