@@ -45,51 +45,57 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: data.when(
-        loading: () => const SizedBox.shrink(),
-        error: (e, _) =>
-            const Center(child: Text("Couldn't load the dashboard.")),
-        data: (d) => LayoutBuilder(
-          builder: (context, box) {
-            // Enough room: everything fits on one screen and the daily chart
-            // takes whatever height is left. Too little (a small phone, a big
-            // font): the same cards, in a list that scrolls.
-            final fits = box.maxHeight >= _kFitHeight;
-            if (!fits) {
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _SummaryCard(d),
-                  const SizedBox(height: 12),
-                  _CategoryCard(d),
-                  const SizedBox(height: 12),
-                  _DailyCard(d),
-                  const SizedBox(height: 12),
-                  _LendingTiles(d),
-                ],
-              );
-            }
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SummaryCard(d),
-                  const SizedBox(height: 12),
-                  _CategoryCard(d),
-                  const SizedBox(height: 12),
-                  Flexible(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 300),
-                      child: _DailyCard(d, fill: true),
-                    ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        child: KeyedSubtree(
+          key: ValueKey(month),
+          child: data.when(
+            loading: () => const SizedBox.shrink(),
+            error: (e, _) =>
+                const Center(child: Text("Couldn't load the dashboard.")),
+            data: (d) => LayoutBuilder(
+              builder: (context, box) {
+                // Enough room: everything fits on one screen and the daily chart
+                // takes whatever height is left. Too little (a small phone, a big
+                // font): the same cards, in a list that scrolls.
+                final fits = box.maxHeight >= _kFitHeight;
+                if (!fits) {
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _SummaryCard(d),
+                      const SizedBox(height: 12),
+                      _CategoryCard(d),
+                      const SizedBox(height: 12),
+                      _DailyCard(d),
+                      const SizedBox(height: 12),
+                      _LendingTiles(d),
+                    ],
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SummaryCard(d),
+                      const SizedBox(height: 12),
+                      _CategoryCard(d),
+                      const SizedBox(height: 12),
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          child: _DailyCard(d, fill: true),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _LendingTiles(d),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  _LendingTiles(d),
-                ],
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -273,24 +279,6 @@ class _CategoryCard extends StatelessWidget {
                     ],
                   ),
                   duration: Duration.zero,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 36),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Top',
-                        style: TextStyle(color: kc.muted, fontSize: 11),
-                      ),
-                      Text(
-                        top.first.category.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: headingStyle(size: 13, color: kc.ink),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

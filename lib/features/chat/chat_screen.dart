@@ -28,6 +28,10 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen>
     with WidgetsBindingObserver {
+  // Messages already on screen. Only ones that arrive later slide in.
+  final _known = <String>{};
+  bool _primed = false;
+
   @override
   void initState() {
     super.initState();
@@ -219,19 +223,43 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     return null;
   }
 
+  Widget? _animated(ChatMessage m, String today) {
+    final view = _messageView(m, today);
+    if (view == null) return null;
+    final fresh = _primed && !_known.contains(m.id);
+    _known.add(m.id);
+    return _Appear(
+      key: ValueKey('msg-${m.id}'),
+      animate: fresh,
+      // a card turning into its "saved" line cross-fades and resizes
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          child: KeyedSubtree(
+            key: ValueKey('${m.id}-${m.cardStatus}'),
+            child: view,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final kc = context.kc;
     final today = ref.watch(todayProvider);
-    final messages =
-        ref.watch(chatMessagesProvider).asData?.value ?? const <ChatMessage>[];
+    final loaded = ref.watch(chatMessagesProvider).asData;
+    final messages = loaded?.value ?? const <ChatMessage>[];
     final chat = ref.watch(chatControllerProvider);
     final voice = ref.watch(voiceControllerProvider);
     final transcribing = voice.phase == VoicePhase.transcribing;
 
     final items = <Widget>[
       if (messages.isNotEmpty) const DayLabel('Today'),
-      for (final m in messages) ?_messageView(m, today),
+      for (final m in messages) ?_animated(m, today),
       if (transcribing) const ThinkingBubble(label: 'Transcribing…'),
       if (chat.sending) const ThinkingBubble(),
       if (chat.error != null)
@@ -243,6 +271,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
           onManual: () => showManualEntryMenu(context, ref),
         ),
     ];
+
+    if (loaded != null) _primed = true;
 
     return Scaffold(
       backgroundColor: kc.bg,
@@ -319,6 +349,49 @@ class _ExpiredNote extends StatelessWidget {
     child: Text(
       'That card expired because the entry changed. Ask again.',
       style: TextStyle(color: context.kc.muted, fontSize: 13),
+    ),
+  );
+}
+
+/// Fades and lifts a message in once, when it first appears.
+class _Appear extends StatefulWidget {
+  const _Appear({super.key, required this.animate, required this.child});
+  final bool animate;
+  final Widget child;
+
+  @override
+  State<_Appear> createState() => _AppearState();
+}
+
+class _AppearState extends State<_Appear> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 320),
+    value: widget.animate ? 0 : 1,
+  );
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _c,
+    curve: Curves.easeOutCubic,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.animate) _c.forward();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: _curve,
+    child: SlideTransition(
+      position: Tween(begin: const Offset(0, 0.12), end: Offset.zero).animate(_curve),
+      child: widget.child,
     ),
   );
 }

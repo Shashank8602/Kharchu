@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/money.dart';
@@ -22,20 +23,23 @@ class UserBubble extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: kc.accent,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(18),
-              bottomRight: Radius.circular(4),
+        child: CopyOnHold(
+          text: text,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: kc.accent,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(4),
+              ),
             ),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(color: kc.onAccent, fontSize: 15, height: 1.35),
+            child: Text(
+              text,
+              style: TextStyle(color: kc.onAccent, fontSize: 15, height: 1.35),
+            ),
           ),
         ),
       ),
@@ -56,20 +60,23 @@ class AssistantBubble extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.86,
         ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: kc.soft,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(4),
-              bottomRight: Radius.circular(18),
+        child: CopyOnHold(
+          text: text,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: kc.soft,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(4),
+                bottomRight: Radius.circular(18),
+              ),
             ),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(color: kc.softInk, fontSize: 15, height: 1.4),
+            child: Text(
+              text,
+              style: TextStyle(color: kc.softInk, fontSize: 15, height: 1.4),
+            ),
           ),
         ),
       ),
@@ -173,7 +180,9 @@ class ErrorBubble extends StatelessWidget {
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: kc.dangerInk,
-                    side: BorderSide(color: kc.dangerInk.withValues(alpha: 0.4)),
+                    side: BorderSide(
+                      color: kc.dangerInk.withValues(alpha: 0.4),
+                    ),
                   ),
                   onPressed: onManual,
                   child: const Text('Add manually'),
@@ -303,5 +312,32 @@ class DayLabel extends StatelessWidget {
         color: context.kc.muted,
       ),
     ),
+  );
+}
+
+/// Hold a message to copy all of it.
+class CopyOnHold extends StatelessWidget {
+  const CopyOnHold({super.key, required this.text, required this.child});
+  final String text;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onLongPress: () async {
+      HapticFeedback.mediumImpact();
+      await Clipboard.setData(ClipboardData(text: text));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Copied'),
+            duration: Duration(seconds: 1),
+            margin: EdgeInsets.fromLTRB(16, 0, 16, 84),
+          ),
+        );
+    },
+    child: child,
   );
 }

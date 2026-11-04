@@ -118,82 +118,87 @@ class BudgetsScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Add budget',
             onPressed: () => _openForm(context, ref),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add_circle_outline),
           ),
         ],
       ),
-      body: view.when(
-        loading: () => const SizedBox.shrink(),
-        error: (_, _) => const Center(child: Text("Couldn't load budgets.")),
-        data: (v) {
-          if (v.isEmpty && v.unbudgeted.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('No budgets yet', style: TextStyle(color: kc.muted)),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => _openForm(context, ref),
-                    child: const Text('Add budget'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (v.overall != null) ...[
-                _OverallCard(
-                  v,
-                  onTap: () => _openForm(context, ref, row: v.overall),
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (v.categories.isNotEmpty)
-                Container(
-                  decoration: BoxDecoration(
-                    color: kc.surface,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  // painted over the children, so their corners never cover the border
-                  foregroundDecoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: kc.line),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < v.categories.length; i++) ...[
-                        if (i > 0) Divider(height: 1, color: kc.hair),
-                        _CategoryRow(
-                          v.categories[i],
-                          onTap: () =>
-                              _openForm(context, ref, row: v.categories[i]),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 240),
+        child: KeyedSubtree(
+          key: ValueKey(view.asData?.value.isEmpty),
+          child: view.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) =>
+                const Center(child: Text("Couldn't load budgets.")),
+            data: (v) {
+              if (v.isEmpty) {
+                // nothing is suggested or listed until a budget is set on purpose
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'No budgets set yet',
+                          textAlign: TextAlign.center,
+                          style: headingStyle(size: 18, color: kc.ink),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add a monthly limit with the + button, or ask in chat.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: kc.muted,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
                         ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              if (v.unbudgeted.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final u in v.unbudgeted.take(6))
-                      ActionChip(
-                        label: Text('+ ${u.$1.name}'),
-                        onPressed: () =>
-                            _openForm(context, ref, category: u.$1),
-                      ),
+                );
+              }
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (v.overall != null) ...[
+                    _OverallCard(
+                      v,
+                      onTap: () => _openForm(context, ref, row: v.overall),
+                    ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-              ],
-            ],
-          );
-        },
+                  if (v.categories.isNotEmpty)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kc.surface,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      // painted over the children, so their corners never cover the border
+                      foregroundDecoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: kc.line),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < v.categories.length; i++) ...[
+                            if (i > 0) Divider(height: 1, color: kc.hair),
+                            _CategoryRow(
+                              v.categories[i],
+                              onTap: () =>
+                                  _openForm(context, ref, row: v.categories[i]),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

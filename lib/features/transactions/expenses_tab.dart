@@ -20,22 +20,23 @@ final txExpensesProvider = StreamProvider.autoDispose<List<ExpenseRow>>((ref) {
   return ref.watch(expenseRepoProvider).watch(filter);
 });
 
-Color categoryColor(BuildContext context, Category c) =>
-    Color(Theme.of(context).brightness == Brightness.dark ? c.colorDark : c.colorLight);
+Color categoryColor(BuildContext context, Category c) => Color(
+  Theme.of(context).brightness == Brightness.dark ? c.colorDark : c.colorLight,
+);
 
 String paymentLabel(String? m) => switch (m) {
-      'cash' => 'Cash',
-      'upi' => 'UPI',
-      'card' => 'Card',
-      'netbanking' => 'Net banking',
-      'other' => 'Other',
-      _ => '',
-    };
+  'cash' => 'Cash',
+  'upi' => 'UPI',
+  'card' => 'Card',
+  'netbanking' => 'Net banking',
+  'other' => 'Other',
+  _ => '',
+};
 
 OutlineInputBorder _pill(Color color, {double width = 1}) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(999),
-      borderSide: BorderSide(color: color, width: width),
-    );
+  borderRadius: BorderRadius.circular(999),
+  borderSide: BorderSide(color: color, width: width),
+);
 
 class ExpensesTab extends ConsumerStatefulWidget {
   const ExpensesTab({super.key});
@@ -71,7 +72,9 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
   Future<void> _edit(ExpenseRow row) async {
     final repo = ref.read(categoryRepoProvider);
     final active = await repo.active();
-    final cats = active.any((c) => c.id == row.category.id) ? active : [...active, row.category];
+    final cats = active.any((c) => c.id == row.category.id)
+        ? active
+        : [...active, row.category];
     if (!mounted) return;
     final e = row.expense;
     final r = await showExpenseSheet(
@@ -86,9 +89,16 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
       location: e.location,
       paymentMethod: e.paymentMethod,
       spentOn: e.spentOn,
+      allowDelete: true,
     );
     if (r == null) return;
-    await ref.read(expenseRepoProvider).update(
+    if (r.delete) {
+      await _delete(row);
+      return;
+    }
+    await ref
+        .read(expenseRepoProvider)
+        .update(
           e.id,
           ExpensesCompanion(
             amountPaise: Value(r.amountPaise),
@@ -107,14 +117,18 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text('Deleted ${formatINR(row.expense.amountPaise)} ${row.expense.item}'),
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () => repo.restore(row.expense.id),
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            'Deleted ${formatINR(row.expense.amountPaise)} ${row.expense.item}',
+          ),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => repo.restore(row.expense.id),
+          ),
         ),
-      ));
+      );
   }
 
   @override
@@ -179,7 +193,10 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
                       child: Container(
                         width: 10,
                         height: 10,
-                        decoration: BoxDecoration(color: kc.accent, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                          color: kc.accent,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                 ],
@@ -190,24 +207,23 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
         Expanded(
           child: rows.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, _) => const Center(child: Text("Couldn't load expenses.")),
+            error: (_, _) =>
+                const Center(child: Text("Couldn't load expenses.")),
             data: (list) {
               if (list.isEmpty) {
                 return Center(
-                  child: Text(filter.isEmpty ? 'No expenses yet' : 'Nothing matches',
-                      style: TextStyle(color: kc.muted)),
+                  child: Text(
+                    filter.isEmpty ? 'No expenses yet' : 'Nothing matches',
+                    style: TextStyle(color: kc.muted),
+                  ),
                 );
               }
               final groups = _groupByDay(list);
               return ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                 itemCount: groups.length,
-                itemBuilder: (_, i) => _DayGroupView(
-                  group: groups[i],
-                  today: today,
-                  onTap: _edit,
-                  onDelete: _delete,
-                ),
+                itemBuilder: (_, i) =>
+                    _DayGroupView(group: groups[i], today: today, onTap: _edit),
               );
             },
           ),
@@ -242,13 +258,11 @@ class _DayGroupView extends StatelessWidget {
     required this.group,
     required this.today,
     required this.onTap,
-    required this.onDelete,
   });
 
   final _DayGroup group;
   final String today;
   final void Function(ExpenseRow) onTap;
-  final Future<void> Function(ExpenseRow) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -261,19 +275,32 @@ class _DayGroupView extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(group.day == today ? 'Today' : dayLabel(group.day),
-                  style: TextStyle(
-                      color: kc.muted, fontWeight: FontWeight.w700, fontSize: 12)),
+              Text(
+                group.day == today ? 'Today' : dayLabel(group.day),
+                style: TextStyle(
+                  color: kc.muted,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: kc.soft,
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(formatINR(group.total),
-                    maxLines: 1,
-                    style: TextStyle(
-                        color: kc.softInk, fontWeight: FontWeight.w700, fontSize: 12)),
+                child: Text(
+                  formatINR(group.total),
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: kc.softInk,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ],
           ),
@@ -296,7 +323,6 @@ class _DayGroupView extends StatelessWidget {
                 _ExpenseTile(
                   row: group.rows[i],
                   onTap: () => onTap(group.rows[i]),
-                  onDelete: () => onDelete(group.rows[i]),
                 ),
               ],
             ],
@@ -308,15 +334,10 @@ class _DayGroupView extends StatelessWidget {
 }
 
 class _ExpenseTile extends StatelessWidget {
-  const _ExpenseTile({
-    required this.row,
-    required this.onTap,
-    required this.onDelete,
-  });
+  const _ExpenseTile({required this.row, required this.onTap});
 
   final ExpenseRow row;
   final VoidCallback onTap;
-  final Future<void> Function() onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -325,65 +346,67 @@ class _ExpenseTile extends StatelessWidget {
     final color = categoryColor(context, row.category);
     final sub = [
       if (e.location != null) e.location!,
-      if (paymentLabel(e.paymentMethod).isNotEmpty) paymentLabel(e.paymentMethod),
+      if (paymentLabel(e.paymentMethod).isNotEmpty)
+        paymentLabel(e.paymentMethod),
     ].join(' · ');
 
-    return Dismissible(
-      key: ValueKey('expense-${e.id}'),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (_) async {
-        await onDelete();
-        return false; // the live list removes it; no animation to keep in sync
-      },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: kc.dangerBg,
-        child: Icon(Icons.delete_outline, color: kc.dangerInk),
-      ),
-      child: Material(
-        color: kc.surface,
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 17,
-                    backgroundColor: color.withValues(alpha: 0.16),
-                    child: Text(row.category.name.characters.first.toUpperCase(),
-                        style: TextStyle(
-                            color: color, fontWeight: FontWeight.w800, fontSize: 14)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(e.item,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: kc.ink, fontWeight: FontWeight.w600, fontSize: 15)),
-                        if (sub.isNotEmpty)
-                          Text(sub,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: kc.muted, fontSize: 12)),
-                      ],
+    return Material(
+      color: kc.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: color.withValues(alpha: 0.16),
+                  child: Text(
+                    row.category.name.characters.first.toUpperCase(),
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(formatINR(e.amountPaise),
-                      style: TextStyle(
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        e.item,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
                           color: kc.ink,
-                          fontWeight: FontWeight.w700,
-                          fontFeatures: const [FontFeature.tabularFigures()])),
-                ],
-              ),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      if (sub.isNotEmpty)
+                        Text(
+                          sub,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: kc.muted, fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  formatINR(e.amountPaise),
+                  style: TextStyle(
+                    color: kc.ink,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
             ),
           ),
         ),

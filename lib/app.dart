@@ -14,13 +14,16 @@ import 'features/transactions/person_detail_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'providers.dart';
 import 'widgets/pill_nav_bar.dart';
+import 'widgets/swipe_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/chat',
     routes: [
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, shell) => AppShell(shell: shell),
+        navigatorContainerBuilder: (context, shell, children) =>
+            SwipeShellBody(shell: shell, children: children),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
