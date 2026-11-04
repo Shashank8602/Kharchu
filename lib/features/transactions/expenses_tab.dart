@@ -187,7 +187,7 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
               }
               final groups = _groupByDay(list);
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                 itemCount: groups.length,
                 itemBuilder: (_, i) => _DayGroupView(
                   group: groups[i],
@@ -260,6 +260,10 @@ class _DayGroupView extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: kc.surface,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          // painted over the children, so their corners never cover the border
+          foregroundDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: kc.line),
           ),

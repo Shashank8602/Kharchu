@@ -108,10 +108,14 @@ class ErrorBubble extends StatelessWidget {
     required this.error,
     this.onRetry,
     this.onDismiss,
+    this.onManual,
   });
   final GroqException error;
   final VoidCallback? onRetry;
   final VoidCallback? onDismiss;
+
+  /// Opens the manual entry forms, so nothing is blocked while the AI is down.
+  final VoidCallback? onManual;
 
   @override
   Widget build(BuildContext context) {
@@ -140,34 +144,43 @@ class ErrorBubble extends StatelessWidget {
               ),
             ],
           ),
-          if (error.canRetry || error.needsProfile) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                if (error.canRetry)
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: kc.danger,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: onRetry,
-                    child: const Text('Retry'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (error.canRetry)
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kc.danger,
+                    foregroundColor: Colors.white,
                   ),
-                if (error.needsProfile)
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: kc.danger,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () {
-                      onDismiss?.call();
-                      context.go('/profile/groq');
-                    },
-                    child: const Text('Open Profile'),
+                  onPressed: onRetry,
+                  child: const Text('Retry'),
+                ),
+              if (error.needsProfile)
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kc.danger,
+                    foregroundColor: Colors.white,
                   ),
-              ],
-            ),
-          ],
+                  onPressed: () {
+                    onDismiss?.call();
+                    context.go('/profile/groq');
+                  },
+                  child: const Text('Open Profile'),
+                ),
+              if (onManual != null)
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: kc.dangerInk,
+                    side: BorderSide(color: kc.dangerInk.withValues(alpha: 0.4)),
+                  ),
+                  onPressed: onManual,
+                  child: const Text('Add manually'),
+                ),
+            ],
+          ),
         ],
       ),
     );

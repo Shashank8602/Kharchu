@@ -126,6 +126,50 @@ void main() {
       expect(find.text('₹1,000  Chats'), findsOneWidget);
     });
 
+    harnessTest('Cancel on the card drops it and saves nothing', (tester) async {
+      await start(tester);
+      script(toolReply('propose_add_expense', addArgs()));
+      await say(tester, 'chats 1000');
+      expect(find.text('Cancel'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save'), findsNothing);
+      expect(find.text('₹1,000'), findsNothing);
+      expect(await saved(tester), isEmpty);
+    });
+
+    harnessTest('one message can show two cards and an answer', (tester) async {
+      await start(tester);
+      script(chatCompletion(calls: [
+        {
+          'id': 'a',
+          'type': 'function',
+          'function': {'name': 'propose_add_expense', 'arguments': jsonEncode(addArgs(item: 'Tea', amount: 20))}
+        },
+        {
+          'id': 'b',
+          'type': 'function',
+          'function': {'name': 'propose_add_expense', 'arguments': jsonEncode(addArgs(item: 'Lunch', amount: 150))}
+        },
+        {
+          'id': 'c',
+          'type': 'function',
+          'function': {
+            'name': 'query_spending',
+            'arguments': jsonEncode({'metric': 'total', 'date_from': '2026-10-01', 'date_to': '2026-10-31'})
+          }
+        },
+      ]));
+      script(chatCompletion(content: 'Two entries to confirm. Nothing spent yet this month.'));
+      await say(tester, 'tea 20, lunch 150, and what is my total?');
+
+      expect(find.text('₹20'), findsOneWidget);
+      expect(find.text('₹150'), findsOneWidget);
+      expect(find.text('Two entries to confirm. Nothing spent yet this month.'), findsOneWidget);
+      expect(find.text('Save'), findsNWidgets(2));
+    });
+
     harnessTest('picking a payment chip is remembered and saved', (tester) async {
       await start(tester);
       script(toolReply('propose_add_expense', addArgs()));

@@ -92,6 +92,10 @@ class _Group extends StatelessWidget {
       decoration: BoxDecoration(
         color: kc.surface,
         borderRadius: BorderRadius.circular(16),
+      ),
+      // painted over the children, so their corners never cover the border
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kc.line),
       ),
       clipBehavior: Clip.antiAlias,

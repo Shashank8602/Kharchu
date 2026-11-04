@@ -142,6 +142,10 @@ class BudgetsScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: kc.surface,
                     borderRadius: BorderRadius.circular(18),
+                  ),
+                  // painted over the children, so their corners never cover the border
+                  foregroundDecoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: kc.line),
                   ),
                   clipBehavior: Clip.antiAlias,
