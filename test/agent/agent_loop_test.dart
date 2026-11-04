@@ -367,11 +367,12 @@ void main() {
             call('a', 'propose_add_expense', addArgs(amount: 100, item: 'Tea')),
             call('b', 'propose_add_expense', addArgs(amount: 200, item: 'Lunch')),
           ])));
+      t.say('OK');
       final r = await t.agent.handle('tea 100 and lunch 200');
       expect(r, isA<AgentMulti>());
       expect((r as AgentMulti).cards.length, 2);
       expect(r.text, isNull);
-      expect(t.adapter.requests.length, 1, reason: 'no extra round needed');
+      expect(t.adapter.requests.length, 2, reason: 'one nudge round, answered OK');
     });
 
     test('a card first and the question in the next round is still answered', () async {
@@ -395,7 +396,7 @@ void main() {
       expect((r as AgentMulti).text, contains('Spent so far'));
       final nudge = t.sentMessages(1).last;
       expect(nudge['role'], 'user');
-      expect(nudge['content'], contains('Answer every such question'));
+      expect(nudge['content'], contains('answer every one'));
     });
 
     test('a bare OK after the card is not shown as an answer', () async {
@@ -414,6 +415,18 @@ void main() {
       final system = t.sentMessages(0).first['content'] as String;
       expect(system, contains('you owe others ₹500'));
       expect(system, contains('no overall budget set'));
+    });
+
+    test('a model that proposes one expense per round still gets all of a list', () async {
+      t.callTool('propose_add_expense', addArgs(amount: 20, item: 'Tea'), id: 'a');
+      t.callTool('propose_add_expense', addArgs(amount: 150, item: 'Lunch'), id: 'b');
+      t.callTool('propose_add_expense', addArgs(amount: 60, item: 'Auto'), id: 'c');
+      t.callTool('propose_add_expense', addArgs(amount: 90, item: 'Snacks'), id: 'd');
+      t.say('OK');
+      final r = await t.agent.handle('tea 20, lunch 150, auto 60 and snacks 90');
+      expect(r, isA<AgentMulti>());
+      expect((r as AgentMulti).cards.length, 4);
+      expect(t.adapter.requests.length, 5);
     });
 
     test('a plain add is still one request and a single card', () async {

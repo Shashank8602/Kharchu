@@ -98,6 +98,16 @@ const _food = {'Food & Dining'};
 const _transport = {'Transport'};
 
 final evalCases = <EvalCase>[
+  EvalCase('tea 20, lunch 150 and auto 60', (r) {
+    if (r is! AgentMulti) return ['expected several cards, got ${_describe(r)}'];
+    final got = r.cards
+        .map((c) => c.proposal)
+        .whereType<AddExpenseProposal>()
+        .map((p) => p.amountPaise)
+        .toList()
+      ..sort();
+    return [if (got.join(',') != '2000,6000,15000') 'amounts were $got']; 
+  }),
   EvalCase("Spent 100 on burger , what's the total spent and how much money am I left with to repay back to my frnds",
       (r) {
     if (r is! AgentMulti) return ['expected a card plus an answer, got ${_describe(r)}'];

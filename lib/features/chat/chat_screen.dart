@@ -15,6 +15,7 @@ import '../../widgets/manual_entry.dart';
 import 'chat_controller.dart';
 import 'voice_controller.dart';
 import 'widgets/bubbles.dart';
+import 'widgets/card_carousel.dart';
 import 'widgets/cards.dart';
 import 'widgets/composer.dart';
 import 'widgets/recording_bar.dart';
@@ -223,6 +224,55 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     return null;
   }
 
+  /// One widget per message, except that several pending cards from the same
+  /// message become one swipeable carousel.
+  List<Widget> _messageItems(List<ChatMessage> messages, String today) {
+    final out = <Widget>[];
+    var i = 0;
+    while (i < messages.length) {
+      if (messages[i].role != 'card') {
+        final w = _animated(messages[i], today);
+        if (w != null) out.add(w);
+        i++;
+        continue;
+      }
+      var j = i;
+      while (j < messages.length && messages[j].role == 'card') {
+        j++;
+      }
+      final run = messages.sublist(i, j);
+      final pending = <ChatMessage>[];
+      for (final m in run) {
+        final p = _proposalOf(m);
+        if (m.cardStatus == 'pending' && p != null && p is! PickProposal) {
+          pending.add(m);
+        } else {
+          final w = _animated(m, today);
+          if (w != null) out.add(w);
+        }
+      }
+      if (pending.length == 1) {
+        final w = _animated(pending.single, today);
+        if (w != null) out.add(w);
+      } else if (pending.length > 1) {
+        final fresh = _primed && pending.any((m) => !_known.contains(m.id));
+        _known.addAll(pending.map((m) => m.id));
+        out.add(
+          _Appear(
+            key: ValueKey('carousel-${run.first.id}'),
+            animate: fresh,
+            child: CardCarousel(
+              ids: [for (final m in pending) m.id],
+              cards: [for (final m in pending) _messageView(m, today)!],
+            ),
+          ),
+        );
+      }
+      i = j;
+    }
+    return out;
+  }
+
   Widget? _animated(ChatMessage m, String today) {
     final view = _messageView(m, today);
     if (view == null) return null;
@@ -259,7 +309,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
 
     final items = <Widget>[
       if (messages.isNotEmpty) const DayLabel('Today'),
-      for (final m in messages) ?_animated(m, today),
+      ..._messageItems(messages, today),
       if (transcribing) const ThinkingBubble(label: 'Transcribing…'),
       if (chat.sending) const ThinkingBubble(),
       if (chat.error != null)

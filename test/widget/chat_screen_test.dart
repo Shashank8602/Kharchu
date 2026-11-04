@@ -139,18 +139,64 @@ void main() {
       expect(await saved(tester), isEmpty);
     });
 
-    harnessTest('one message can show two cards and an answer', (tester) async {
+    harnessTest('several cards from one message sit in a swipeable carousel', (tester) async {
+      await start(tester);
+      Map<String, dynamic> call(String id, Map<String, dynamic> args) => {
+        'id': id,
+        'type': 'function',
+        'function': {'name': 'propose_add_expense', 'arguments': jsonEncode(args)},
+      };
+      script(chatCompletion(calls: [
+        call('a', addArgs(item: 'Tea', amount: 20)),
+        call('b', addArgs(item: 'Lunch', amount: 150)),
+        call('c', addArgs(item: 'Auto', amount: 60)),
+      ]));
+      await say(tester, 'tea 20, lunch 150, auto 60');
+
+      // one card at a time, first one first
+      expect(find.text('1 of 3 to confirm'), findsOneWidget);
+      expect(find.text('₹20'), findsOneWidget);
+      expect(find.text('₹150'), findsNothing);
+
+      // swipe to the next card, then back
+      await tester.fling(find.text('₹20'), const Offset(-200, 0), 1500);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3 to confirm'), findsOneWidget);
+      expect(find.text('₹150'), findsOneWidget);
+      await tester.fling(find.text('₹150'), const Offset(200, 0), 1500);
+      await tester.pumpAndSettle();
+      expect(find.text('₹20'), findsOneWidget);
+
+      // the arrows work too; save the second card on its own
+      await tester.tap(find.byTooltip('Next card'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      var rows = await saved(tester);
+      expect(rows.map((r) => r.expense.item), ['Lunch']);
+
+      // the next card takes its place; two are left
+      expect(find.text('2 of 2 to confirm'), findsOneWidget);
+      expect(find.text('₹60'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // one left: shown as an ordinary card, no carousel header
+      expect(find.textContaining('to confirm'), findsNothing);
+      expect(find.text('₹20'), findsOneWidget);
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      rows = await saved(tester);
+      expect(rows.map((r) => r.expense.item).toSet(), {'Lunch', 'Tea'});
+    });
+
+    harnessTest('a card and an answer from one message both show', (tester) async {
       await start(tester);
       script(chatCompletion(calls: [
         {
           'id': 'a',
           'type': 'function',
           'function': {'name': 'propose_add_expense', 'arguments': jsonEncode(addArgs(item: 'Tea', amount: 20))}
-        },
-        {
-          'id': 'b',
-          'type': 'function',
-          'function': {'name': 'propose_add_expense', 'arguments': jsonEncode(addArgs(item: 'Lunch', amount: 150))}
         },
         {
           'id': 'c',
@@ -161,13 +207,10 @@ void main() {
           }
         },
       ]));
-      script(chatCompletion(content: 'Two entries to confirm. Nothing spent yet this month.'));
-      await say(tester, 'tea 20, lunch 150, and what is my total?');
-
+      script(chatCompletion(content: 'One entry to confirm. Nothing spent yet this month.'));
+      await say(tester, 'tea 20, and what is my total?');
       expect(find.text('₹20'), findsOneWidget);
-      expect(find.text('₹150'), findsOneWidget);
-      expect(find.text('Two entries to confirm. Nothing spent yet this month.'), findsOneWidget);
-      expect(find.text('Save'), findsNWidgets(2));
+      expect(find.text('One entry to confirm. Nothing spent yet this month.'), findsOneWidget);
     });
 
     harnessTest('picking a payment chip is remembered and saved', (tester) async {
