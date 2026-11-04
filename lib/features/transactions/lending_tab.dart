@@ -30,7 +30,7 @@ class LendingTab extends ConsumerWidget {
         final open = list.where((b) => !b.settled).toList();
         final settled = list.where((b) => b.settled).toList();
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
           children: [
             Row(
               children: [
@@ -111,6 +111,10 @@ class _Group extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: kc.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      // painted over the children, so their corners never cover the border
+      foregroundDecoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: kc.line),
       ),

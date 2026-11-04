@@ -11,6 +11,7 @@ import '../../providers.dart';
 import '../../services/agent/proposals.dart';
 import '../../services/card_actions.dart';
 import '../../widgets/expense_form_sheet.dart';
+import '../../widgets/manual_entry.dart';
 import 'chat_controller.dart';
 import 'voice_controller.dart';
 import 'widgets/bubbles.dart';
@@ -239,6 +240,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
           onRetry: () => ref.read(chatControllerProvider.notifier).retry(),
           onDismiss: () =>
               ref.read(chatControllerProvider.notifier).dismissError(),
+          onManual: () => showManualEntryMenu(context, ref),
         ),
     ];
 
@@ -254,6 +256,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
         ),
         shape: Border(bottom: BorderSide(color: kc.line)),
         actions: [
+          IconButton(
+            tooltip: 'Add manually',
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () => showManualEntryMenu(context, ref),
+          ),
           IconButton(
             tooltip: 'History',
             icon: const Icon(Icons.history),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:kharchu/widgets/pill_nav_bar.dart';
 import 'harness.dart';
 import 'seed.dart';
 
@@ -20,7 +21,7 @@ Future<void> start(WidgetTester tester, Future<void> Function(Seed s)? seed,
 
 Future<void> goTo(WidgetTester tester, String name) async {
   await tester.tap(
-      find.descendant(of: find.byType(NavigationBar), matching: find.text(name)));
+      find.descendant(of: find.byType(PillNavBar), matching: find.text(name)));
   await tester.pumpAndSettle();
 }
 

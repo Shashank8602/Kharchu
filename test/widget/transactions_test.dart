@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kharchu/widgets/pill_nav_bar.dart';
 import 'package:kharchu/app.dart';
 import 'package:kharchu/data/db/app_database.dart';
 
@@ -20,7 +21,7 @@ Future<void> start(WidgetTester tester, Future<void> Function(Seed s)? seed,
   await tester.pumpWidget(h.app());
   await tester.pumpAndSettle();
   await tester.tap(
-      find.descendant(of: find.byType(NavigationBar), matching: find.text('Transactions')));
+      find.descendant(of: find.byType(PillNavBar), matching: find.text('Transactions')));
   await tester.pumpAndSettle();
   if (lending) {
     await tester.tap(find.text('Lending'));

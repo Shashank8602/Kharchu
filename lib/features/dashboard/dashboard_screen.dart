@@ -45,22 +45,57 @@ class DashboardScreen extends ConsumerWidget {
       body: data.when(
         loading: () => const SizedBox.shrink(),
         error: (e, _) => const Center(child: Text("Couldn't load the dashboard.")),
-        data: (d) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _SummaryCard(d),
-            const SizedBox(height: 12),
-            _CategoryCard(d),
-            const SizedBox(height: 12),
-            _DailyCard(d),
-            const SizedBox(height: 12),
-            _LendingTiles(d),
-          ],
+        data: (d) => LayoutBuilder(
+          builder: (context, box) {
+            // Enough room: everything fits on one screen and the daily chart
+            // takes whatever height is left. Too little (a small phone, a big
+            // font): the same cards, in a list that scrolls.
+            final fits = box.maxHeight >= _kFitHeight;
+            if (!fits) {
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _SummaryCard(d),
+                  const SizedBox(height: 12),
+                  _CategoryCard(d),
+                  const SizedBox(height: 12),
+                  _DailyCard(d),
+                  const SizedBox(height: 12),
+                  _LendingTiles(d),
+                ],
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SummaryCard(d),
+                  const SizedBox(height: 12),
+                  _CategoryCard(d),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: _DailyCard(d, fill: true),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _LendingTiles(d),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 }
+
+/// Body height from which the dashboard fits without scrolling: the fixed
+/// cards (summary, categories, lending, gaps and padding) plus a daily chart
+/// still tall enough to read.
+const _kFitHeight = 640.0;
 
 class _Card extends StatelessWidget {
   const _Card({required this.child});
@@ -90,10 +125,23 @@ class _SummaryCard extends StatelessWidget {
     final kc = context.kc;
     final budget = d.overall;
     final pct = budget == null ? 0.0 : d.total / budget;
-    final barColor = pct >= 1 ? kc.danger : (pct >= 0.8 ? kc.warn : kc.accent);
     final left = budget == null ? null : budget - d.total;
 
-    return _Card(
+    const onHero = Colors.white;
+    final heroMuted = Colors.white.withValues(alpha: 0.78);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: heroGradient(kc),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: kc.heroA.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -105,15 +153,16 @@ class _SummaryCard extends StatelessWidget {
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(formatINR(d.total),
-                      style: headingStyle(size: 32, color: kc.ink)),
+                      style: headingStyle(size: 32, color: onHero)),
                 ),
               ),
               if (budget != null) ...[
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text('of ${formatINR(budget)}',
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: kc.muted, fontSize: 14)),
+                      style: TextStyle(color: heroMuted, fontSize: 14)),
                 ),
               ],
             ],
@@ -125,8 +174,8 @@ class _SummaryCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: pct.clamp(0.0, 1.0),
                 minHeight: 8,
-                backgroundColor: kc.track,
-                valueColor: AlwaysStoppedAnimation(barColor),
+                backgroundColor: Colors.white.withValues(alpha: 0.25),
+                valueColor: AlwaysStoppedAnimation(pct >= 1 ? const Color(0xFFFFB4A8) : (pct >= 0.8 ? const Color(0xFFFFD08A) : Colors.white)),
               ),
             ),
             const SizedBox(height: 10),
@@ -134,8 +183,10 @@ class _SummaryCard extends StatelessWidget {
               left! >= 0
                   ? '${formatINR(left)} left${d.isCurrentMonth && d.daysLeft > 0 ? ' · ${d.daysLeft} ${d.daysLeft == 1 ? 'day' : 'days'}' : ''}'
                   : 'Over by ${formatINR(-left)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  color: left < 0 ? kc.dangerInk : kc.muted,
+                  color: left < 0 ? const Color(0xFFFFD6CF) : heroMuted,
                   fontWeight: left < 0 ? FontWeight.w700 : FontWeight.w400,
                   fontSize: 13),
             ),
@@ -143,13 +194,15 @@ class _SummaryCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text('${d.count} ${d.count == 1 ? 'expense' : 'expenses'}',
-                  style: TextStyle(color: kc.muted, fontSize: 14)),
+                  style: TextStyle(color: heroMuted, fontSize: 14)),
             ),
           if (d.overBudget.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('${d.overBudget.join(', ')} over budget',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                    color: kc.dangerInk, fontWeight: FontWeight.w700, fontSize: 13)),
+                    color: const Color(0xFFFFD6CF), fontWeight: FontWeight.w700, fontSize: 13)),
           ],
         ],
       ),
@@ -267,8 +320,11 @@ class _CategoryCard extends StatelessWidget {
 }
 
 class _DailyCard extends ConsumerWidget {
-  const _DailyCard(this.d);
+  const _DailyCard(this.d, {this.fill = false});
   final DashboardData d;
+
+  /// The chart takes the height it is given instead of a fixed 160.
+  final bool fill;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -299,12 +355,13 @@ class _DailyCard extends ConsumerWidget {
                       color: kc.ink, fontWeight: FontWeight.w700, fontSize: 15)),
               if (todayTotal != null)
                 Text('Today ${formatINR(todayTotal)}',
+                    maxLines: 1,
                     style: TextStyle(color: kc.muted, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            height: 160,
+          _ChartSlot(
+            fill: fill,
             child: BarChart(
               BarChartData(
                 maxY: maxY,
@@ -373,6 +430,16 @@ class _DailyCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _ChartSlot extends StatelessWidget {
+  const _ChartSlot({required this.fill, required this.child});
+  final bool fill;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      fill ? Expanded(child: child) : SizedBox(height: 160, child: child);
 }
 
 class _LendingTiles extends ConsumerWidget {

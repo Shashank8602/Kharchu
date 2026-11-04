@@ -42,6 +42,8 @@ class SettingsRow extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontWeight: FontWeight.w600, color: color, fontSize: 15)),
               ),
@@ -55,6 +57,8 @@ class SettingsRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(tag!,
+                      maxLines: 1,
+                      softWrap: false,
                       style: TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w600, color: tagFg)),
                 ),
@@ -83,6 +87,10 @@ class RowCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: kc.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      // painted over the children, so their corners never cover the border
+      foregroundDecoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: kc.line),
       ),

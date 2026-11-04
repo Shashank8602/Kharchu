@@ -291,7 +291,7 @@ void main() {
       expect(t.adapter.requests.length, 4);
     });
 
-    test('only the first of several tool calls is run, and ids stay consistent', () async {
+    test('every tool call of a round is run, and ids stay consistent', () async {
       t.adapter.script.add((_) => json(chatCompletion(calls: [
             {
               'id': 'a',
@@ -308,8 +308,9 @@ void main() {
       await t.agent.handle('x');
       final second = t.sentMessages(1);
       final assistant = second.firstWhere((m) => m['role'] == 'assistant');
-      expect((assistant['tool_calls'] as List).length, 1);
-      expect(second.last['tool_call_id'], 'a');
+      expect((assistant['tool_calls'] as List).length, 2);
+      final toolIds = second.where((m) => m['role'] == 'tool').map((m) => m['tool_call_id']);
+      expect(toolIds, ['a', 'b']);
     });
 
     test('a malformed first reply is retried once', () async {
@@ -324,6 +325,72 @@ void main() {
       t.adapter.script.add((_) => json(chatCompletion(content: '  ')));
       final r = await t.agent.handle('x');
       expect((r as AgentAnswer).text, AgentService.stuckMessage);
+    });
+  });
+
+  group('one message, several tasks', () {
+    Map<String, dynamic> call(String id, String name, Map<String, dynamic> args) => {
+          'id': id,
+          'type': 'function',
+          'function': {'name': name, 'arguments': jsonEncode(args)},
+        };
+
+    test('an expense plus two questions gives a card and an answer', () async {
+      t.adapter.script.add((_) => json(chatCompletion(calls: [
+            call('a', 'propose_add_expense', addArgs(amount: 500, item: 'Dinner')),
+            call('b', 'query_spending',
+                {'metric': 'total', 'date_from': '2026-10-01', 'date_to': '2026-10-31'}),
+            call('c', 'query_spending',
+                {'metric': 'budget_status', 'date_from': '2026-10-01', 'date_to': '2026-10-31'}),
+          ])));
+      t.say('Dinner ₹500 is ready to confirm. You have spent ₹0 so far.');
+      final r = await t.agent.handle(
+          'i spent 500rs on dinner today and tell me the total and how much i am left with');
+
+      expect(r, isA<AgentMulti>());
+      final multi = r as AgentMulti;
+      expect(multi.cards.length, 1);
+      expect((multi.cards.single.proposal as AddExpenseProposal).amountPaise, 50000);
+      expect(multi.text, contains('₹500'));
+      // the model saw a result for every call, including the card
+      final tools = t.sentMessages(1).where((m) => m['role'] == 'tool').toList();
+      expect(tools.map((m) => m['tool_call_id']), ['a', 'b', 'c']);
+      expect(tools.first['content'], contains('not saved until'));
+      // nothing is saved before the user confirms
+      expect(await t.env.expenses.find(const ExpenseFilter()), isEmpty);
+      final msgs = await t.env.chat.messagesForDay(kToday);
+      expect(msgs.map((m) => m.role), ['user', 'card', 'assistant']);
+    });
+
+    test('two expenses in one message give two cards', () async {
+      t.adapter.script.add((_) => json(chatCompletion(calls: [
+            call('a', 'propose_add_expense', addArgs(amount: 100, item: 'Tea')),
+            call('b', 'propose_add_expense', addArgs(amount: 200, item: 'Lunch')),
+          ])));
+      final r = await t.agent.handle('tea 100 and lunch 200');
+      expect(r, isA<AgentMulti>());
+      expect((r as AgentMulti).cards.length, 2);
+      expect(r.text, isNull);
+      expect(t.adapter.requests.length, 1, reason: 'no extra round needed');
+    });
+
+    test('a card first and the question in the next round is still answered', () async {
+      t.callTool('propose_add_expense', addArgs(amount: 500, item: 'Dinner'));
+      t.callTool('query_spending',
+          {'metric': 'total', 'date_from': '2026-10-01', 'date_to': '2026-10-31'},
+          id: 'q');
+      t.say('Spent so far: ₹0.');
+      final r = await t.agent.handle('dinner 500, and what is my total?');
+      expect(r, isA<AgentMulti>());
+      expect((r as AgentMulti).cards.length, 1);
+      expect(r.text, 'Spent so far: ₹0.');
+    });
+
+    test('a plain add is still one request and a single card', () async {
+      t.callTool('propose_add_expense', addArgs());
+      final r = await t.agent.handle('chats 1000');
+      expect(r, isA<AgentCard>());
+      expect(t.adapter.requests.length, 1);
     });
   });
 

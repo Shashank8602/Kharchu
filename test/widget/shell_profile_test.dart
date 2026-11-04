@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kharchu/widgets/pill_nav_bar.dart';
 import 'package:kharchu/data/db/app_database.dart';
 
 import '../unit/fake_http.dart';
@@ -8,7 +9,7 @@ import 'harness.dart';
 
 Future<void> openProfile(WidgetTester tester) async {
   await tester.tap(find.descendant(
-      of: find.byType(NavigationBar), matching: find.text('Profile')));
+      of: find.byType(PillNavBar), matching: find.text('Profile')));
   await tester.pumpAndSettle();
 }
 
@@ -33,7 +34,7 @@ void main() {
   group('shell', () {
     harnessTest('opens on Chat and shows five tabs', (tester) async {
       await start(tester);
-      final nav = find.byType(NavigationBar);
+      final nav = find.byType(PillNavBar);
       for (final t in ['Chat', 'Dashboard', 'Transactions', 'Budgets', 'Profile']) {
         expect(find.descendant(of: nav, matching: find.text(t)), findsOneWidget, reason: t);
       }
@@ -43,7 +44,7 @@ void main() {
       await start(tester);
       Future<void> tab(String name) async {
         await tester.tap(find.descendant(
-            of: find.byType(NavigationBar), matching: find.text(name)));
+            of: find.byType(PillNavBar), matching: find.text(name)));
         await tester.pumpAndSettle();
       }
 
@@ -63,7 +64,7 @@ void main() {
       await start(tester);
       await openProfile(tester);
       await tester.tap(find.descendant(
-          of: find.byType(NavigationBar), matching: find.text('Profile')));
+          of: find.byType(PillNavBar), matching: find.text('Profile')));
       await tester.pumpAndSettle();
       expect(find.text('Theme'), findsOneWidget);
     });

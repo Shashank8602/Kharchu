@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kharchu/widgets/pill_nav_bar.dart';
 import 'package:kharchu/data/db/app_database.dart';
 import 'package:kharchu/data/repositories/expense_repository.dart';
 import 'package:kharchu/services/agent/proposals.dart';
@@ -24,7 +25,7 @@ Future<void> start(WidgetTester tester, Future<void> Function(Seed s)? seed,
   addTearDown(tester.view.reset);
   await tester.pumpWidget(h.app());
   await tester.pumpAndSettle();
-  await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Profile')));
+  await tester.tap(find.descendant(of: find.byType(PillNavBar), matching: find.text('Profile')));
   await tester.pumpAndSettle();
 }
 
@@ -91,7 +92,7 @@ void main() {
       addTearDown(tester.view.reset);
       await tester.pumpWidget(h.app());
       await tester.pumpAndSettle();
-      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Profile')));
+      await tester.tap(find.descendant(of: find.byType(PillNavBar), matching: find.text('Profile')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Back up to file'));
       await tester.pumpAndSettle();
@@ -326,7 +327,7 @@ void main() {
     }
 
     Future<void> openHistory(WidgetTester tester) async {
-      await tester.tap(find.descendant(of: find.byType(NavigationBar), matching: find.text('Chat')));
+      await tester.tap(find.descendant(of: find.byType(PillNavBar), matching: find.text('Chat')));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('History'));
       await tester.pumpAndSettle();

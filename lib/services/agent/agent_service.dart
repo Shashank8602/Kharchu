@@ -33,6 +33,14 @@ class AgentCard extends AgentReply {
   final Proposal proposal;
 }
 
+/// One message produced several results: one or more confirm cards, and/or
+/// a written answer (for example "Dinner ₹500 to confirm; spent ₹3,200 so far").
+class AgentMulti extends AgentReply {
+  const AgentMulti(this.cards, this.text);
+  final List<AgentCard> cards;
+  final String? text;
+}
+
 /// Groq could not be reached or refused. Nothing was stored but the user's
 /// own message, so Retry can run it again.
 class AgentFailure extends AgentReply {
@@ -41,8 +49,9 @@ class AgentFailure extends AgentReply {
 }
 
 /// The loop: send the message and the list of actions to Groq, run whatever
-/// it asks for, feed the result back, and stop when it proposes a change
-/// (a card) or answers in words. At most [maxSteps] rounds.
+/// it asks for (all the calls of a round, so one message can hold several
+/// tasks), feed the results back, and stop when it has only proposals to show
+/// (cards) or answers in words. At most [maxSteps] rounds.
 class AgentService {
   AgentService({
     required this.groq,
@@ -93,6 +102,11 @@ class AgentService {
       {'role': 'user', 'content': input},
     ];
 
+    // Cards made so far. A message like "add dinner 500 and tell me my total"
+    // yields a card and an answer, so these are carried across rounds.
+    final cards = <AgentCard>[];
+    final wantsMore = _looksLikeMoreThanOneTask(input);
+
     for (var step = 0; step < maxSteps; step++) {
       final ChatResult result;
       try {
@@ -111,50 +125,84 @@ class AgentService {
           });
           continue;
         }
+        // Cards already shown stay useful even if the follow-up failed.
+        if (cards.isNotEmpty) return _finish(day, cards, null);
         return AgentFailure(e);
       }
 
       if (result.toolCalls.isEmpty) {
-        final answer = result.content ?? stuckMessage;
-        await chat.add(day: day, role: 'assistant', body: answer);
-        return AgentAnswer(answer);
+        final answer = result.content ?? (cards.isEmpty ? stuckMessage : null);
+        return _finish(day, cards, answer);
       }
 
-      // Only the first call is handled. The echoed assistant message carries
-      // just that call so every call id has a matching result.
-      final call = result.toolCalls.first;
+      // Every call of the round is run, and each gets a matching result so
+      // the ids line up.
       messages.add({
         'role': 'assistant',
         'content': null,
         'tool_calls': [
-          {
-            'id': call.id,
-            'type': 'function',
-            'function': {'name': call.name, 'arguments': call.arguments},
-          }
+          for (final call in result.toolCalls)
+            {
+              'id': call.id,
+              'type': 'function',
+              'function': {'name': call.name, 'arguments': call.arguments},
+            }
         ],
       });
 
-      final outcome = await _runCall(call, input, source);
-      switch (outcome) {
-        case ProposalResult(:final proposal):
-          final id = await chat.add(
-            day: day,
-            role: 'card',
-            cardType: proposal.type,
-            cardPayload: jsonEncode(proposal.toJson()),
-            cardStatus: 'pending',
-          );
-          return AgentCard(id, proposal);
-        case ReadResult(:final data):
-          messages.add(_toolMessage(call.id, data));
-        case ToolError(:final message):
-          messages.add(_toolMessage(call.id, {'error': message}));
+      var needsAnswer = false;
+      for (final call in result.toolCalls) {
+        final outcome = await _runCall(call, input, source);
+        switch (outcome) {
+          case ProposalResult(:final proposal):
+            final id = await chat.add(
+              day: day,
+              role: 'card',
+              cardType: proposal.type,
+              cardPayload: jsonEncode(proposal.toJson()),
+              cardStatus: 'pending',
+            );
+            cards.add(AgentCard(id, proposal));
+            messages.add(_toolMessage(call.id, {
+              'status': 'shown to the user as a card, not saved until they confirm',
+            }));
+          case ReadResult(:final data):
+            needsAnswer = true;
+            messages.add(_toolMessage(call.id, data));
+          case ToolError(:final message):
+            needsAnswer = true;
+            messages.add(_toolMessage(call.id, {'error': message}));
+        }
+      }
+
+      // Only changes to confirm and nothing to answer: done, unless the
+      // message looks like it also asked a question.
+      if (!needsAnswer && !(wantsMore && step < maxSteps - 1)) {
+        return _finish(day, cards, null);
       }
     }
 
-    await chat.add(day: day, role: 'assistant', body: stuckMessage);
-    return const AgentAnswer(stuckMessage);
+    return _finish(day, cards, cards.isEmpty ? stuckMessage : null);
+  }
+
+  /// Stores the answer (if any) and picks the reply type.
+  Future<AgentReply> _finish(String day, List<AgentCard> cards, String? answer) async {
+    var text = answer?.trim();
+    if (text != null && text.isEmpty) text = null;
+    if (text == null && cards.isEmpty) text = stuckMessage;
+    if (text != null) await chat.add(day: day, role: 'assistant', body: text);
+    if (cards.isEmpty) return AgentAnswer(text!);
+    if (cards.length == 1 && text == null) return cards.single;
+    return AgentMulti(cards, text);
+  }
+
+  /// A cheap guess that the message asked for more than one thing, so a round
+  /// with only a card in it is not the end. Costs one extra request at most.
+  static bool _looksLikeMoreThanOneTask(String t) {
+    final s = t.toLowerCase();
+    return s.contains('?') ||
+        RegExp(r'(total|how much|balance|left|remaining|tell me|show me|what|and also)')
+            .hasMatch(s);
   }
 
   Future<ToolOutcome> _runCall(ToolCall call, String rawText, String source) async {

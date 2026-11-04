@@ -34,6 +34,8 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
     required this.borrowedBg,
     required this.borrowedInk,
     required this.bar,
+    required this.heroA,
+    required this.heroB,
     required this.chart,
   });
 
@@ -42,20 +44,23 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
   final Color warn, warnBg, warnInk;
   final Color danger, dangerBg, dangerInk;
   final Color track, bar;
+
+  /// Ends of the gradient used on hero cards and the user's chat bubbles.
+  final Color heroA, heroB;
   final Color lentBg, lentInk, borrowedBg, borrowedInk;
   final List<Color> chart;
 
   static const light = KharchuColors(
-    bg: Color(0xFFF2F4F3),
+    bg: Color(0xFFEEF5F3),
     surface: Color(0xFFFFFFFF),
-    field: Color(0xFFF7F9F8),
+    field: Color(0xFFF4F8F7),
     ink: Color(0xFF15201B),
     muted: Color(0xFF56635C),
     line: Color(0xFFDDE3E0),
     hair: Color(0xFFEEF1EF),
     accent: Color(0xFF0F6B5C),
     onAccent: Color(0xFFFFFFFF),
-    soft: Color(0xFFE3F1EC),
+    soft: Color(0xFFDDF0EA),
     softInk: Color(0xFF0A4F44),
     warn: Color(0xFFC2620F),
     warnBg: Color(0xFFFFF4E8),
@@ -69,6 +74,8 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
     borrowedBg: Color(0xFFF3ECF8),
     borrowedInk: Color(0xFF5B3480),
     bar: Color(0xFF94C7B8),
+    heroA: Color(0xFF0F6B5C),
+    heroB: Color(0xFF2A8F9A),
     chart: [
       Color(0xFF0F6B5C),
       Color(0xFFD9822B),
@@ -103,6 +110,8 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
     borrowedBg: Color(0xFF2A1F38),
     borrowedInk: Color(0xFFCDB2E8),
     bar: Color(0xFF2E5E52),
+    heroA: Color(0xFF1C6E5F),
+    heroB: Color(0xFF237683),
     chart: [
       Color(0xFF3FAE95),
       Color(0xFFE08A3C),
@@ -179,22 +188,6 @@ ThemeData buildTheme(Brightness brightness) {
       surfaceTintColor: Colors.transparent,
     ),
     dividerTheme: DividerThemeData(color: c.hair, space: 1, thickness: 1),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: c.surface,
-      surfaceTintColor: Colors.transparent,
-      indicatorColor: Colors.transparent,
-      height: 64,
-      iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(
-            color: s.contains(WidgetState.selected) ? c.accent : c.muted,
-            size: 24,
-          )),
-      labelTextStyle: WidgetStateProperty.resolveWith((s) => TextStyle(
-            fontSize: 11,
-            fontWeight:
-                s.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w600,
-            color: s.contains(WidgetState.selected) ? c.accent : c.muted,
-          )),
-    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: c.field,
@@ -230,6 +223,16 @@ ThemeData buildTheme(Brightness brightness) {
         textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
       ),
     ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      elevation: 3,
+      shape: StadiumBorder(),
+    ),
+    chipTheme: ChipThemeData(
+      shape: const StadiumBorder(),
+      side: BorderSide(color: c.line),
+      selectedColor: c.soft,
+      labelStyle: TextStyle(color: c.ink, fontWeight: FontWeight.w600),
+    ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: c.ink,
@@ -238,3 +241,10 @@ ThemeData buildTheme(Brightness brightness) {
     ),
   );
 }
+
+/// The gradient behind hero cards, bubbles and avatars.
+LinearGradient heroGradient(KharchuColors c) => LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [c.heroA, c.heroB],
+    );

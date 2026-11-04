@@ -88,6 +88,7 @@ List<String> _answer(AgentReply r, {List<String> has = const [], bool english = 
 String _describe(AgentReply r) => switch (r) {
       AgentAnswer(:final text) => 'answer "$text"',
       AgentCard(:final proposal) => 'card ${proposal.type}',
+      AgentMulti(:final cards, :final text) => '${cards.length} cards and text "$text"',
       AgentFailure(:final error) => error is GroqBadRequest
           ? 'failure GroqBadRequest: ${error.detail}'
           : 'failure ${error.runtimeType}',
@@ -97,6 +98,17 @@ const _food = {'Food & Dining'};
 const _transport = {'Transport'};
 
 final evalCases = <EvalCase>[
+  // ---- several tasks in one message
+  EvalCase('i spent 500rs on dinner today and tell me the total amount expenses and also how much money am left with for balance',
+      (r) {
+    if (r is! AgentMulti) return ['expected a card plus an answer, got ${_describe(r)}'];
+    final p = r.cards.first.proposal;
+    return [
+      if (r.cards.length != 1) 'expected one card, got ${r.cards.length}',
+      if (p is! AddExpenseProposal || p.amountPaise != 50000) 'wrong card: ${p.type}',
+      if (r.text == null || !r.text!.contains('₹')) 'no figures in the answer: "${r.text}"',
+    ];
+  }),
   // ---- spending, English
   EvalCase('I spent Rs.1000 to eat chats in Bengaluru',
       (r) => _add(r, paise: 100000, categories: _food, itemHas: 'chat', location: 'Bengaluru', date: '2026-10-24')),

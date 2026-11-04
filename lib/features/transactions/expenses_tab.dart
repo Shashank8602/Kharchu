@@ -32,6 +32,11 @@ String paymentLabel(String? m) => switch (m) {
       _ => '',
     };
 
+OutlineInputBorder _pill(Color color, {double width = 1}) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(999),
+      borderSide: BorderSide(color: color, width: width),
+    );
+
 class ExpensesTab extends ConsumerStatefulWidget {
   const ExpensesTab({super.key});
 
@@ -146,6 +151,9 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
                             },
                           ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: _pill(kc.line),
+                    enabledBorder: _pill(kc.line),
+                    focusedBorder: _pill(kc.accent, width: 2),
                   ),
                 ),
               ),
@@ -156,7 +164,12 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
                   IconButton.outlined(
                     tooltip: 'Filter',
                     onPressed: _openFilters,
-                    style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                      shape: const CircleBorder(),
+                      side: BorderSide(color: kc.line),
+                      backgroundColor: kc.field,
+                    ),
                     icon: const Icon(Icons.tune, size: 20),
                   ),
                   if (filter.hasFilters)
@@ -187,7 +200,7 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
               }
               final groups = _groupByDay(list);
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
                 itemCount: groups.length,
                 itemBuilder: (_, i) => _DayGroupView(
                   group: groups[i],
@@ -251,15 +264,27 @@ class _DayGroupView extends StatelessWidget {
               Text(group.day == today ? 'Today' : dayLabel(group.day),
                   style: TextStyle(
                       color: kc.muted, fontWeight: FontWeight.w700, fontSize: 12)),
-              Text(formatINR(group.total),
-                  style: TextStyle(
-                      color: kc.muted, fontWeight: FontWeight.w700, fontSize: 12)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: kc.soft,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(formatINR(group.total),
+                    maxLines: 1,
+                    style: TextStyle(
+                        color: kc.softInk, fontWeight: FontWeight.w700, fontSize: 12)),
+              ),
             ],
           ),
         ),
         Container(
           decoration: BoxDecoration(
             color: kc.surface,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          // painted over the children, so their corners never cover the border
+          foregroundDecoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: kc.line),
           ),

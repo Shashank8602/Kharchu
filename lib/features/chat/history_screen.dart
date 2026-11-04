@@ -151,6 +151,10 @@ class _DayCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: kc.surface,
         borderRadius: BorderRadius.circular(14),
+      ),
+      // painted over the children, so their corners never cover the border
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: kc.line),
       ),
       clipBehavior: Clip.antiAlias,
