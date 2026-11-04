@@ -328,6 +328,15 @@ class _AddCard extends StatelessWidget {
               ),
             ],
           ),
+        // Dropping the whole entry, whichever way it was proposed.
+        Align(
+          alignment: Alignment.center,
+          child: TextButton(
+            onPressed: cb.onCancel,
+            style: TextButton.styleFrom(foregroundColor: kc.muted),
+            child: const Text('Cancel'),
+          ),
+        ),
       ],
     );
   }
