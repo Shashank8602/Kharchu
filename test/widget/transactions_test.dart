@@ -155,9 +155,11 @@ void main() {
       expect(find.text('₹4,120'), findsWidgets);
     });
 
-    harnessTest('swipe to delete removes it, and Undo brings it back', (tester) async {
+    harnessTest('Delete inside the edit sheet removes it, and Undo brings it back', (tester) async {
       await start(tester, seedExpenses);
-      await tester.drag(find.text('Auto'), const Offset(-600, 0));
+      await tester.tap(find.text('Auto'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete expense'));
       await tester.pumpAndSettle();
       expect(find.text('Auto'), findsNothing);
       expect(find.textContaining('Deleted ₹240 Auto'), findsOneWidget);

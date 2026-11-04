@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../core/dates.dart';
 import '../../core/money.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/budget_repository.dart';
 import '../../data/repositories/category_repository.dart';
 import '../../data/repositories/chat_repository.dart';
 import '../../data/repositories/expense_repository.dart';
@@ -61,6 +62,7 @@ class AgentService {
     required this.categories,
     required this.lending,
     required this.today,
+    this.budgets,
     this.maxSteps = 4,
     this.historyTurns = 6,
   });
@@ -72,6 +74,9 @@ class AgentService {
   final CategoryRepository categories;
   final LendingRepository lending;
   final String Function() today;
+
+  /// Lets the prompt carry this month's budget left. Optional.
+  final BudgetRepository? budgets;
   final int maxSteps;
   final int historyTurns;
 
@@ -106,8 +111,12 @@ class AgentService {
     // yields a card and an answer, so these are carried across rounds.
     final cards = <AgentCard>[];
     final wantsMore = _looksLikeMoreThanOneTask(input);
+    var nudges = 0;
 
-    for (var step = 0; step < maxSteps; step++) {
+    // Each extra card found after a nudge earns one more round, so a list of
+    // five expenses is not cut off at the usual limit.
+    var limit = maxSteps;
+    for (var step = 0; step < limit; step++) {
       final ChatResult result;
       try {
         result = await groq.chat(messages: messages, tools: toolSchemas);
@@ -116,7 +125,7 @@ class AgentService {
         if (e is GroqBadResponse && step == 0) continue;
         // Groq rejected the model's tool call (for example a value of the wrong
         // type). Tell the model what was wrong, as we do for our own checks.
-        if (e is GroqBadRequest && step < maxSteps - 1) {
+        if (e is GroqBadRequest && step < limit - 1) {
           final detail = e.detail.length > 300 ? e.detail.substring(0, 300) : e.detail;
           messages.add({
             'role': 'user',
@@ -151,6 +160,7 @@ class AgentService {
       });
 
       var needsAnswer = false;
+      final cardsBefore = cards.length;
       for (final call in result.toolCalls) {
         final outcome = await _runCall(call, input, source);
         switch (outcome) {
@@ -176,9 +186,24 @@ class AgentService {
       }
 
       // Only changes to confirm and nothing to answer: done, unless the
-      // message looks like it also asked a question.
-      if (!needsAnswer && !(wantsMore && step < maxSteps - 1)) {
-        return _finish(day, cards, null);
+      // message looks like it also asked a question. Models often stop after
+      // the card, so say plainly what is still open.
+      if (nudges > 0 && cards.length > cardsBefore && limit < maxSteps + 6) limit++;
+      if (!needsAnswer) {
+        if (!wantsMore || nudges >= 6 || step >= limit - 1) {
+          return _finish(day, cards, null);
+        }
+        nudges++;
+        messages.add({
+          'role': 'user',
+          'content': 'So far ${cards.length} card(s) are shown, and my message has '
+              '${_amountCount(input)} amount(s). Read my message again. If an '
+              'expense or loan in it has no card yet, call the propose tool for it '
+              'now (all missing ones together). If it asked questions (totals, '
+              'money left, who is owed), answer every one using the "Right now" '
+              'figures or the query tools, and say new entries are not counted '
+              'until confirmed. If nothing is missing, reply with just: OK',
+        });
       }
     }
 
@@ -188,7 +213,9 @@ class AgentService {
   /// Stores the answer (if any) and picks the reply type.
   Future<AgentReply> _finish(String day, List<AgentCard> cards, String? answer) async {
     var text = answer?.trim();
-    if (text != null && text.isEmpty) text = null;
+    if (text != null && (text.isEmpty || (cards.isNotEmpty && text.toLowerCase() == 'ok'))) {
+      text = null;
+    }
     if (text == null && cards.isEmpty) text = stuckMessage;
     if (text != null) await chat.add(day: day, role: 'assistant', body: text);
     if (cards.isEmpty) return AgentAnswer(text!);
@@ -198,10 +225,17 @@ class AgentService {
 
   /// A cheap guess that the message asked for more than one thing, so a round
   /// with only a card in it is not the end. Costs one extra request at most.
+  static int _amountCount(String t) =>
+      RegExp(r'\d[\d,]*(\.\d+)?\s?k?').allMatches(t).length;
+
   static bool _looksLikeMoreThanOneTask(String t) {
     final s = t.toLowerCase();
-    return s.contains('?') ||
-        RegExp(r'(total|how much|balance|left|remaining|tell me|show me|what|and also)')
+    // several amounts, a list ("tea 20, lunch 150"), or a question
+    return _amountCount(s) >= 2 ||
+        s.contains('?') ||
+        s.contains(';') ||
+        s.contains('\n') ||
+        RegExp(r'(total|how much|balance|left|remaining|repay|reimburse|owe|tell me|show me|what|and also| and | & )')
             .hasMatch(s);
   }
 
@@ -232,11 +266,29 @@ class AgentService {
             '(${r.category.name}, ${r.expense.spentOn})')
         .toList();
     return buildSystemPrompt(
+      snapshot: await _snapshot(day),
       todayIso: day,
       categories: cats,
       people: people,
       recentExpenses: recent,
     );
+  }
+
+  /// Current figures, so a question can be answered even if the model skips
+  /// the query tools.
+  Future<String> _snapshot(String day) async {
+    final m = monthRange(day);
+    final spent = await expenses.total(m.from, m.to);
+    final totals = await lending.totals();
+    final overall = await budgets?.forCategory(null);
+    final budget = overall == null
+        ? 'no overall budget set'
+        : (overall.monthlyLimitPaise >= spent
+            ? '${formatINR(overall.monthlyLimitPaise - spent)} of the ${formatINR(overall.monthlyLimitPaise)} budget left'
+            : 'over the ${formatINR(overall.monthlyLimitPaise)} budget by ${formatINR(spent - overall.monthlyLimitPaise)}');
+    return 'spent this month ${formatINR(spent)}; $budget; '
+        'you owe others ${formatINR(totals.owePaise)} (to repay); '
+        'others owe you ${formatINR(totals.getPaise)}';
   }
 
   /// Today's last few turns as the model should remember them. Cards become

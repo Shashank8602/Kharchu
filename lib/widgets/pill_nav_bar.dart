@@ -82,35 +82,55 @@ class _Item extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(999),
           onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              color: selected ? tab.bg : Colors.transparent,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(selected ? tab.selectedIcon : tab.icon, size: 22, color: color),
-                const SizedBox(height: 2),
-                FittedBox(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // the tinted pill sits behind the icon only, so the label can
+              // use the whole width of the tab
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                width: selected ? 52 : 36,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? tab.bg : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    selected ? tab.selectedIcon : tab.icon,
+                    key: ValueKey(selected),
+                    size: 22,
+                    color: color,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(
-                    tab.label,
-                    maxLines: 1,
-                    softWrap: false,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                       color: color,
                     ),
+                    child: Text(
+                      tab.label,
+                      maxLines: 1,
+                      softWrap: false,
+                      textScaler: MediaQuery.textScalerOf(
+                        context,
+                      ).clamp(maxScaleFactor: 1.15),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

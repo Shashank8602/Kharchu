@@ -45,6 +45,7 @@ class AgentEnv {
       expenses: env.expenses,
       categories: env.categories,
       lending: env.lending,
+      budgets: env.budgets,
       today: () => _today,
     );
     alerts = BudgetAlerts(

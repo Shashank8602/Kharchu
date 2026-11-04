@@ -17,7 +17,11 @@ class ExpenseFormResult {
     required this.location,
     required this.paymentMethod,
     required this.spentOn,
+    this.delete = false,
   });
+
+  /// The user chose Delete instead of Save (the other fields are then unused).
+  final bool delete;
   final int amountPaise;
   final String item;
 
@@ -46,6 +50,7 @@ Future<ExpenseFormResult?> showExpenseSheet(
   String? location,
   String? paymentMethod,
   String? spentOn,
+  bool allowDelete = false,
 }) {
   return showModalBottomSheet<ExpenseFormResult>(
     context: context,
@@ -64,6 +69,7 @@ Future<ExpenseFormResult?> showExpenseSheet(
       location: location,
       paymentMethod: paymentMethod,
       spentOn: spentOn ?? todayIso,
+      allowDelete: allowDelete,
     ),
   );
 }
@@ -81,8 +87,10 @@ class _ExpenseSheet extends StatefulWidget {
     required this.location,
     required this.paymentMethod,
     required this.spentOn,
+    required this.allowDelete,
   });
 
+  final bool allowDelete;
   final List<Category> categories;
   final String todayIso;
   final String title;
@@ -293,6 +301,27 @@ class _ExpenseSheetState extends State<_ExpenseSheet> {
                       icon: const Icon(Icons.calendar_today_outlined, size: 18),
                       label: Text(friendlyDate(_date, widget.todayIso)),
                     ),
+                    if (widget.allowDelete) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(foregroundColor: kc.danger),
+                        onPressed: () => Navigator.pop(
+                          context,
+                          const ExpenseFormResult(
+                            amountPaise: 0,
+                            item: '',
+                            categoryId: 0,
+                            categoryName: '',
+                            location: null,
+                            paymentMethod: null,
+                            spentOn: '',
+                            delete: true,
+                          ),
+                        ),
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        label: const Text('Delete expense'),
+                      ),
+                    ],
                   ],
                 ),
               ),

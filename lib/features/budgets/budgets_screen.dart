@@ -55,40 +55,51 @@ final budgetsViewProvider = StreamProvider.autoDispose<BudgetsView>((ref) {
   final expenses = ref.watch(expenseRepoProvider);
   final categories = ref.watch(categoryRepoProvider);
   final budgets = ref.watch(budgetRepoProvider);
-  return watchQuery<BudgetsView>(db, {db.expenses, db.budgets, db.categories}, () async {
-    final m = monthRange(today);
-    final sums = await expenses.sumByCategory(m.from, m.to);
-    final total = await expenses.total(m.from, m.to);
-    final cats = {for (final c in await categories.all()) c.id: c};
-    final list = await budgets.all();
-    BudgetRow? overall;
-    final rows = <BudgetRow>[];
-    for (final b in list) {
-      if (b.categoryId == null) {
-        overall = BudgetRow(budget: b, name: 'Overall', spent: total);
-      } else if (cats[b.categoryId] != null) {
-        rows.add(BudgetRow(
-            budget: b, name: cats[b.categoryId]!.name, spent: sums[b.categoryId] ?? 0));
+  return watchQuery<BudgetsView>(
+    db,
+    {db.expenses, db.budgets, db.categories},
+    () async {
+      final m = monthRange(today);
+      final sums = await expenses.sumByCategory(m.from, m.to);
+      final total = await expenses.total(m.from, m.to);
+      final cats = {for (final c in await categories.all()) c.id: c};
+      final list = await budgets.all();
+      BudgetRow? overall;
+      final rows = <BudgetRow>[];
+      for (final b in list) {
+        if (b.categoryId == null) {
+          overall = BudgetRow(budget: b, name: 'Overall', spent: total);
+        } else if (cats[b.categoryId] != null) {
+          rows.add(
+            BudgetRow(
+              budget: b,
+              name: cats[b.categoryId]!.name,
+              spent: sums[b.categoryId] ?? 0,
+            ),
+          );
+        }
       }
-    }
-    rows.sort((a, b) {
-      final r = a.rank.compareTo(b.rank);
-      return r != 0 ? r : b.percent.compareTo(a.percent);
-    });
-    final budgeted = {for (final b in list) b.categoryId};
-    final unbudgeted = [
-      for (final e in sums.entries)
-        if (!budgeted.contains(e.key) && cats[e.key] != null && !cats[e.key]!.isArchived)
-          (cats[e.key]!, e.value)
-    ]..sort((a, b) => b.$2.compareTo(a.$2));
-    return BudgetsView(
-      month: m.from,
-      daysLeft: daysLeftInMonth(today),
-      overall: overall,
-      categories: rows,
-      unbudgeted: unbudgeted,
-    );
-  });
+      rows.sort((a, b) {
+        final r = a.rank.compareTo(b.rank);
+        return r != 0 ? r : b.percent.compareTo(a.percent);
+      });
+      final budgeted = {for (final b in list) b.categoryId};
+      final unbudgeted = [
+        for (final e in sums.entries)
+          if (!budgeted.contains(e.key) &&
+              cats[e.key] != null &&
+              !cats[e.key]!.isArchived)
+            (cats[e.key]!, e.value),
+      ]..sort((a, b) => b.$2.compareTo(a.$2));
+      return BudgetsView(
+        month: m.from,
+        daysLeft: daysLeftInMonth(today),
+        overall: overall,
+        categories: rows,
+        unbudgeted: unbudgeted,
+      );
+    },
+  );
 });
 
 class BudgetsScreen extends ConsumerWidget {
@@ -107,81 +118,97 @@ class BudgetsScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Add budget',
             onPressed: () => _openForm(context, ref),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add_circle_outline),
           ),
         ],
       ),
-      body: view.when(
-        loading: () => const SizedBox.shrink(),
-        error: (_, _) => const Center(child: Text("Couldn't load budgets.")),
-        data: (v) {
-          if (v.isEmpty && v.unbudgeted.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('No budgets yet', style: TextStyle(color: kc.muted)),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: () => _openForm(context, ref),
-                    child: const Text('Add budget'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (v.overall != null) ...[
-                _OverallCard(v, onTap: () => _openForm(context, ref, row: v.overall)),
-                const SizedBox(height: 12),
-              ],
-              if (v.categories.isNotEmpty)
-                Container(
-                  decoration: BoxDecoration(
-                    color: kc.surface,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  // painted over the children, so their corners never cover the border
-                  foregroundDecoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: kc.line),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < v.categories.length; i++) ...[
-                        if (i > 0) Divider(height: 1, color: kc.hair),
-                        _CategoryRow(v.categories[i],
-                            onTap: () => _openForm(context, ref, row: v.categories[i])),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 240),
+        child: KeyedSubtree(
+          key: ValueKey(view.asData?.value.isEmpty),
+          child: view.when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) =>
+                const Center(child: Text("Couldn't load budgets.")),
+            data: (v) {
+              if (v.isEmpty) {
+                // nothing is suggested or listed until a budget is set on purpose
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'No budgets set yet',
+                          textAlign: TextAlign.center,
+                          style: headingStyle(size: 18, color: kc.ink),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add a monthly limit with the + button, or ask in chat.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: kc.muted,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              if (v.unbudgeted.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final u in v.unbudgeted.take(6))
-                      ActionChip(
-                        label: Text('+ ${u.$1.name}'),
-                        onPressed: () => _openForm(context, ref, category: u.$1),
-                      ),
+                );
+              }
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (v.overall != null) ...[
+                    _OverallCard(
+                      v,
+                      onTap: () => _openForm(context, ref, row: v.overall),
+                    ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-              ],
-            ],
-          );
-        },
+                  if (v.categories.isNotEmpty)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: kc.surface,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      // painted over the children, so their corners never cover the border
+                      foregroundDecoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: kc.line),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < v.categories.length; i++) ...[
+                            if (i > 0) Divider(height: 1, color: kc.hair),
+                            _CategoryRow(
+                              v.categories[i],
+                              onTap: () =>
+                                  _openForm(context, ref, row: v.categories[i]),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
 
-  Future<void> _openForm(BuildContext context, WidgetRef ref,
-      {BudgetRow? row, Category? category}) async {
+  Future<void> _openForm(
+    BuildContext context,
+    WidgetRef ref, {
+    BudgetRow? row,
+    Category? category,
+  }) async {
     final cats = await ref.read(categoryRepoProvider).active();
     if (!context.mounted) return;
     await showModalBottomSheet<void>(
@@ -229,11 +256,25 @@ class _OverallCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(monthName(v.month),
-                      style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700)),
-                  Text(v.daysLeft == 0 ? 'Last day' : '${v.daysLeft} ${v.daysLeft == 1 ? 'day' : 'days'} left',
+                  Text(
+                    monthName(v.month),
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: kc.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      v.daysLeft == 0
+                          ? 'Last day'
+                          : '${v.daysLeft} ${v.daysLeft == 1 ? 'day' : 'days'} left',
                       maxLines: 1,
-                      style: TextStyle(color: kc.muted, fontSize: 13)),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: kc.muted, fontSize: 13),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -244,16 +285,20 @@ class _OverallCard extends StatelessWidget {
                   Flexible(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(formatINR(r.spent),
-                          style: headingStyle(size: 30, color: kc.ink)),
+                      child: Text(
+                        formatINR(r.spent),
+                        style: headingStyle(size: 30, color: kc.ink),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Flexible(
-                    child: Text('/ ${formatINR(r.limit)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: kc.muted)),
+                    child: Text(
+                      '/ ${formatINR(r.limit)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: kc.muted),
+                    ),
                   ),
                 ],
               ),
@@ -286,8 +331,8 @@ class _CategoryRow extends StatelessWidget {
     final (label, bg, fg, bar) = r.over
         ? ('Over', kc.dangerBg, kc.dangerInk, kc.danger)
         : r.near
-            ? ('Near limit', kc.warnBg, kc.warnInk, kc.warn)
-            : ('On track', kc.soft, kc.softInk, kc.accent);
+        ? ('Near limit', kc.warnBg, kc.warnInk, kc.warn)
+        : ('On track', kc.soft, kc.softInk, kc.accent);
     final remaining = r.limit - r.spent;
     return InkWell(
       onTap: onTap,
@@ -299,19 +344,34 @@ class _CategoryRow extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(r.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: kc.ink, fontWeight: FontWeight.w600, fontSize: 15)),
+                  child: Text(
+                    r.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: kc.ink,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                  decoration:
-                      BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-                  child: Text(label,
-                      style: TextStyle(
-                          color: fg, fontWeight: FontWeight.w700, fontSize: 12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: fg,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -330,10 +390,12 @@ class _CategoryRow extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Flexible(
-                  child: Text('${formatINR(r.spent)} of ${formatINR(r.limit)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: kc.muted, fontSize: 13)),
+                  child: Text(
+                    '${formatINR(r.spent)} of ${formatINR(r.limit)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: kc.muted, fontSize: 13),
+                  ),
                 ),
                 Text(
                   remaining >= 0
@@ -377,11 +439,12 @@ class _BudgetSheet extends StatefulWidget {
 class _BudgetSheetState extends State<_BudgetSheet> {
   late int? _category = widget.initialCategoryId;
   late final TextEditingController _amount = TextEditingController(
-      text: widget.initialPaise == null
-          ? ''
-          : (widget.initialPaise! % 100 == 0
+    text: widget.initialPaise == null
+        ? ''
+        : (widget.initialPaise! % 100 == 0
               ? '${widget.initialPaise! ~/ 100}'
-              : (widget.initialPaise! / 100).toStringAsFixed(2)));
+              : (widget.initialPaise! / 100).toStringAsFixed(2)),
+  );
   String? _error;
   bool _busy = false;
 
@@ -428,25 +491,34 @@ class _BudgetSheetState extends State<_BudgetSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.editing == null ? 'Add budget' : 'Edit budget',
-                style: headingStyle(size: 19, color: kc.ink)),
+            Text(
+              widget.editing == null ? 'Add budget' : 'Edit budget',
+              style: headingStyle(size: 19, color: kc.ink),
+            ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int?>(
               initialValue: _category,
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'For'),
               items: [
-                const DropdownMenuItem<int?>(value: null, child: Text('Overall')),
+                const DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text('Overall'),
+                ),
                 for (final c in widget.categories)
                   DropdownMenuItem<int?>(value: c.id, child: Text(c.name)),
               ],
-              onChanged: widget.lockCategory ? null : (v) => setState(() => _category = v),
+              onChanged: widget.lockCategory
+                  ? null
+                  : (v) => setState(() => _category = v),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _amount,
               autofocus: widget.editing == null,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'Monthly limit',
                 prefixText: '₹ ',

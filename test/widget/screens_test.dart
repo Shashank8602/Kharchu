@@ -155,10 +155,18 @@ void main() {
   });
 
   group('Budgets', () {
-    harnessTest('with nothing set, offers to add one', (tester) async {
+    harnessTest('with nothing set, only a calm message is shown', (tester) async {
       await start(tester, null, tab: 'Budgets');
-      expect(find.text('No budgets yet'), findsOneWidget);
-      expect(find.text('Add budget'), findsOneWidget);
+      expect(find.text('No budgets set yet'), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(ActionChip), findsNothing);
+    });
+
+    harnessTest('spending without a budget shows no suggestions or cards', (tester) async {
+      await start(tester, october, tab: 'Budgets');
+      expect(find.text('No budgets set yet'), findsOneWidget);
+      expect(find.byType(ActionChip), findsNothing);
+      expect(find.text('On track'), findsNothing);
     });
 
     harnessTest('statuses, figures and order (over first)', (tester) async {
@@ -182,27 +190,13 @@ void main() {
       expect(near, lessThan(ok));
     });
 
-    harnessTest('categories with spending but no budget are offered', (tester) async {
+    harnessTest('categories with spending but no budget are not suggested', (tester) async {
       await start(tester, (s) async {
         await october(s);
         await s.budget(6000, category: 'Food & Dining');
       }, tab: 'Budgets');
-      expect(find.text('+ Shopping'), findsOneWidget);
-      expect(find.text('+ Food & Dining'), findsNothing);
-    });
-
-    harnessTest('adding a budget from a chip makes it appear', (tester) async {
-      await start(tester, (s) async {
-        await october(s);
-        await s.budget(6000, category: 'Food & Dining');
-      }, tab: 'Budgets');
-      await tester.tap(find.text('+ Shopping'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextField, 'Monthly limit'), '5000');
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-      expect(find.text('₹4,350 of ₹5,000'), findsOneWidget);
       expect(find.text('+ Shopping'), findsNothing);
+      expect(find.byType(ActionChip), findsNothing);
     });
 
     harnessTest('the + button adds an overall budget', (tester) async {

@@ -21,8 +21,11 @@ class DashboardScreen extends ConsumerWidget {
     final data = ref.watch(dashboardProvider);
     final notifier = ref.read(monthProvider.notifier);
     final year = tryParseIso(month)!.year;
-    final thisYear = tryParseIso(monthRange(ref.watch(todayProvider)).from)!.year;
-    final title = year == thisYear ? monthName(month) : '${monthName(month)} $year';
+    final thisYear = tryParseIso(monthRange(ref.watch(todayProvider)).from)!
+        .year;
+    final title = year == thisYear
+        ? monthName(month)
+        : '${monthName(month)} $year';
 
     return Scaffold(
       backgroundColor: kc.bg,
@@ -42,50 +45,57 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: data.when(
-        loading: () => const SizedBox.shrink(),
-        error: (e, _) => const Center(child: Text("Couldn't load the dashboard.")),
-        data: (d) => LayoutBuilder(
-          builder: (context, box) {
-            // Enough room: everything fits on one screen and the daily chart
-            // takes whatever height is left. Too little (a small phone, a big
-            // font): the same cards, in a list that scrolls.
-            final fits = box.maxHeight >= _kFitHeight;
-            if (!fits) {
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _SummaryCard(d),
-                  const SizedBox(height: 12),
-                  _CategoryCard(d),
-                  const SizedBox(height: 12),
-                  _DailyCard(d),
-                  const SizedBox(height: 12),
-                  _LendingTiles(d),
-                ],
-              );
-            }
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SummaryCard(d),
-                  const SizedBox(height: 12),
-                  _CategoryCard(d),
-                  const SizedBox(height: 12),
-                  Flexible(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 300),
-                      child: _DailyCard(d, fill: true),
-                    ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        child: KeyedSubtree(
+          key: ValueKey(month),
+          child: data.when(
+            loading: () => const SizedBox.shrink(),
+            error: (e, _) =>
+                const Center(child: Text("Couldn't load the dashboard.")),
+            data: (d) => LayoutBuilder(
+              builder: (context, box) {
+                // Enough room: everything fits on one screen and the daily chart
+                // takes whatever height is left. Too little (a small phone, a big
+                // font): the same cards, in a list that scrolls.
+                final fits = box.maxHeight >= _kFitHeight;
+                if (!fits) {
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _SummaryCard(d),
+                      const SizedBox(height: 12),
+                      _CategoryCard(d),
+                      const SizedBox(height: 12),
+                      _DailyCard(d),
+                      const SizedBox(height: 12),
+                      _LendingTiles(d),
+                    ],
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SummaryCard(d),
+                      const SizedBox(height: 12),
+                      _CategoryCard(d),
+                      const SizedBox(height: 12),
+                      Flexible(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          child: _DailyCard(d, fill: true),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _LendingTiles(d),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  _LendingTiles(d),
-                ],
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -127,20 +137,13 @@ class _SummaryCard extends StatelessWidget {
     final pct = budget == null ? 0.0 : d.total / budget;
     final left = budget == null ? null : budget - d.total;
 
-    const onHero = Colors.white;
-    final heroMuted = Colors.white.withValues(alpha: 0.78);
+    final onHero = kc.onAccent;
+    final heroMuted = kc.onAccent.withValues(alpha: 0.78);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: heroGradient(kc),
+        color: kc.accent,
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: kc.heroA.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,17 +155,21 @@ class _SummaryCard extends StatelessWidget {
               Flexible(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(formatINR(d.total),
-                      style: headingStyle(size: 32, color: onHero)),
+                  child: Text(
+                    formatINR(d.total),
+                    style: headingStyle(size: 32, color: onHero),
+                  ),
                 ),
               ),
               if (budget != null) ...[
                 const SizedBox(width: 8),
                 Flexible(
-                  child: Text('of ${formatINR(budget)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: heroMuted, fontSize: 14)),
+                  child: Text(
+                    'of ${formatINR(budget)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: heroMuted, fontSize: 14),
+                  ),
                 ),
               ],
             ],
@@ -174,8 +181,8 @@ class _SummaryCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: pct.clamp(0.0, 1.0),
                 minHeight: 8,
-                backgroundColor: Colors.white.withValues(alpha: 0.25),
-                valueColor: AlwaysStoppedAnimation(pct >= 1 ? const Color(0xFFFFB4A8) : (pct >= 0.8 ? const Color(0xFFFFD08A) : Colors.white)),
+                backgroundColor: kc.onAccent.withValues(alpha: 0.25),
+                valueColor: AlwaysStoppedAnimation(kc.onAccent),
               ),
             ),
             const SizedBox(height: 10),
@@ -186,23 +193,31 @@ class _SummaryCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  color: left < 0 ? const Color(0xFFFFD6CF) : heroMuted,
-                  fontWeight: left < 0 ? FontWeight.w700 : FontWeight.w400,
-                  fontSize: 13),
+                color: left < 0 ? kc.onAccent : heroMuted,
+                fontWeight: left < 0 ? FontWeight.w700 : FontWeight.w400,
+                fontSize: 13,
+              ),
             ),
           ] else
             Padding(
               padding: const EdgeInsets.only(top: 6),
-              child: Text('${d.count} ${d.count == 1 ? 'expense' : 'expenses'}',
-                  style: TextStyle(color: heroMuted, fontSize: 14)),
+              child: Text(
+                '${d.count} ${d.count == 1 ? 'expense' : 'expenses'}',
+                style: TextStyle(color: heroMuted, fontSize: 14),
+              ),
             ),
           if (d.overBudget.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('${d.overBudget.join(', ')} over budget',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: const Color(0xFFFFD6CF), fontWeight: FontWeight.w700, fontSize: 13)),
+            Text(
+              '${d.overBudget.join(', ')} over budget',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: kc.onAccent,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
           ],
         ],
       ),
@@ -222,8 +237,10 @@ class _CategoryCard extends StatelessWidget {
         child: SizedBox(
           height: 120,
           child: Center(
-            child: Text('No spending this month',
-                style: TextStyle(color: kc.muted, fontSize: 14)),
+            child: Text(
+              'No spending this month',
+              style: TextStyle(color: kc.muted, fontSize: 14),
+            ),
           ),
         ),
       );
@@ -263,19 +280,6 @@ class _CategoryCard extends StatelessWidget {
                   ),
                   duration: Duration.zero,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 36),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Top', style: TextStyle(color: kc.muted, fontSize: 11)),
-                      Text(top.first.category.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: headingStyle(size: 13, color: kc.ink)),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -292,21 +296,28 @@ class _CategoryCard extends StatelessWidget {
                           width: 10,
                           height: 10,
                           decoration: BoxDecoration(
-                              color: s.$3, borderRadius: BorderRadius.circular(3)),
+                            color: s.$3,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(s.$1,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: kc.ink, fontSize: 13)),
+                          child: Text(
+                            s.$1,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: kc.ink, fontSize: 13),
+                          ),
                         ),
                         const SizedBox(width: 6),
-                        Text(formatINR(s.$2),
-                            style: TextStyle(
-                                color: kc.ink,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
+                        Text(
+                          formatINR(s.$2),
+                          style: TextStyle(
+                            color: kc.ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -334,7 +345,8 @@ class _DailyCard extends ConsumerWidget {
     final shownDays = todayDay.clamp(1, d.daysInMonth);
 
     int valueOn(int day) {
-      final iso = '${d.monthStart.substring(0, 8)}${day.toString().padLeft(2, '0')}';
+      final iso =
+          '${d.monthStart.substring(0, 8)}${day.toString().padLeft(2, '0')}';
       return d.byDay[iso] ?? 0;
     }
 
@@ -350,13 +362,24 @@ class _DailyCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Daily',
-                  style: TextStyle(
-                      color: kc.ink, fontWeight: FontWeight.w700, fontSize: 15)),
+              Text(
+                'Daily',
+                maxLines: 1,
+                style: TextStyle(
+                  color: kc.ink,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
               if (todayTotal != null)
-                Text('Today ${formatINR(todayTotal)}',
+                Flexible(
+                  child: Text(
+                    'Today ${formatINR(todayTotal)}',
                     maxLines: 1,
-                    style: TextStyle(color: kc.muted, fontSize: 13)),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: kc.muted, fontSize: 13),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -373,18 +396,25 @@ class _DailyCard extends ConsumerWidget {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: maxY / 2,
-                  getDrawingHorizontalLine: (_) => FlLine(color: kc.hair, strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: kc.hair, strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 44,
                       interval: maxY / 2,
-                      getTitlesWidget: (v, meta) => Text(formatINRShort(v.round()),
-                          style: TextStyle(color: kc.muted, fontSize: 10)),
+                      getTitlesWidget: (v, meta) => Text(
+                        formatINRShort(v.round()),
+                        style: TextStyle(color: kc.muted, fontSize: 10),
+                      ),
                     ),
                   ),
                   bottomTitles: AxisTitles(
@@ -394,14 +424,18 @@ class _DailyCard extends ConsumerWidget {
                       interval: 1,
                       getTitlesWidget: (v, meta) {
                         final day = v.round();
-                        final show = day == 1 || day == shownDays || day % 7 == 1;
-                        if (!show || (shownDays - day).abs() < 3 && day != shownDays) {
+                        final show =
+                            day == 1 || day == shownDays || day % 7 == 1;
+                        if (!show ||
+                            (shownDays - day).abs() < 3 && day != shownDays) {
                           return const SizedBox.shrink();
                         }
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text('$day',
-                              style: TextStyle(color: kc.muted, fontSize: 10)),
+                          child: Text(
+                            '$day',
+                            style: TextStyle(color: kc.muted, fontSize: 10),
+                          ),
                         );
                       },
                     ),
@@ -415,9 +449,12 @@ class _DailyCard extends ConsumerWidget {
                         BarChartRodData(
                           toY: values[i].toDouble(),
                           width: shownDays > 20 ? 5 : 8,
-                          color: (d.isCurrentMonth && i + 1 == todayDay) ? kc.accent : kc.bar,
-                          borderRadius:
-                              const BorderRadius.vertical(top: Radius.circular(3)),
+                          color: (d.isCurrentMonth && i + 1 == todayDay)
+                              ? kc.accent
+                              : kc.bar,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(3),
+                          ),
                         ),
                       ],
                     ),
@@ -450,7 +487,8 @@ class _LendingTiles extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final kc = context.kc;
 
-    Widget tile(String label, int paise, int people, Color bg, Color fg) => Expanded(
+    Widget tile(String label, int paise, int people, Color bg, Color fg) =>
+        Expanded(
           child: Material(
             color: bg,
             borderRadius: BorderRadius.circular(18),
@@ -465,18 +503,27 @@ class _LendingTiles extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label,
-                        style: TextStyle(
-                            color: fg, fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: fg,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     FittedBox(
                       fit: BoxFit.scaleDown,
-                      child: Text(formatINR(paise),
-                          style: headingStyle(size: 22, color: fg)),
+                      child: Text(
+                        formatINR(paise),
+                        style: headingStyle(size: 22, color: fg),
+                      ),
                     ),
                     const SizedBox(height: 2),
-                    Text('$people ${people == 1 ? 'person' : 'people'}',
-                        style: TextStyle(color: fg, fontSize: 12)),
+                    Text(
+                      '$people ${people == 1 ? 'person' : 'people'}',
+                      style: TextStyle(color: fg, fontSize: 12),
+                    ),
                   ],
                 ),
               ),
@@ -486,10 +533,21 @@ class _LendingTiles extends ConsumerWidget {
 
     return Row(
       children: [
-        tile("You'll get", d.lending.getPaise, d.lending.getPeople, kc.lentBg, kc.lentInk),
+        tile(
+          "You'll get",
+          d.lending.getPaise,
+          d.lending.getPeople,
+          kc.lentBg,
+          kc.lentInk,
+        ),
         const SizedBox(width: 10),
-        tile('You owe', d.lending.owePaise, d.lending.owePeople, kc.borrowedBg,
-            kc.borrowedInk),
+        tile(
+          'You owe',
+          d.lending.owePaise,
+          d.lending.owePeople,
+          kc.borrowedBg,
+          kc.borrowedInk,
+        ),
       ],
     );
   }
