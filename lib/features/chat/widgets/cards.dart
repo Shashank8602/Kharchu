@@ -50,12 +50,9 @@ class ProposalCard extends StatelessWidget {
 }
 
 class _Shell extends StatelessWidget {
-  const _Shell({required this.children, this.banner, this.accent});
+  const _Shell({required this.children, this.banner});
   final List<Widget> children;
   final Widget? banner;
-
-  /// Color of the thin strip along the top that hints at the kind of card.
-  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
@@ -65,16 +62,10 @@ class _Shell extends StatelessWidget {
         color: kc.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      // painted over the children, so their corners never cover the border
-      foregroundDecoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: kc.line),
-      ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(height: 4, color: accent ?? kc.accent),
           ?banner,
           Padding(
             padding: const EdgeInsets.all(16),
@@ -255,7 +246,6 @@ class _AddCard extends StatelessWidget {
 
     return _Shell(
       banner: banner,
-      accent: kc.accent,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -477,7 +467,6 @@ class _UpdateCard extends StatelessWidget {
     }
 
     return _Shell(
-      accent: kc.lentInk,
       children: [
         Text(
           'Update · ${p.itemBefore}',
@@ -514,7 +503,6 @@ class _DeleteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final kc = context.kc;
     return _Shell(
-      accent: kc.danger,
       children: [
         Text(
           'Delete this expense?',
@@ -561,7 +549,6 @@ class _BudgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final kc = context.kc;
     return _Shell(
-      accent: kc.warn,
       children: [
         Text(
           '${p.categoryName} budget',
@@ -617,7 +604,6 @@ class _LoanCard extends StatelessWidget {
       friendlyDate(p.happenedOn, todayIso),
     ].join(' · ');
     return _Shell(
-      accent: (p.lent ? kc.lentInk : kc.borrowedInk),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -691,7 +677,6 @@ class _RepaymentCard extends StatelessWidget {
     final fg = p.lent ? kc.lentInk : kc.borrowedInk;
     final settles = p.outstandingAfterPaise == 0;
     return _Shell(
-      accent: (p.lent ? kc.lentInk : kc.borrowedInk),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -778,7 +763,6 @@ class _PickCard extends StatelessWidget {
       _ => 'Which one?',
     };
     return _Shell(
-      accent: kc.borrowedInk,
       children: [
         Text(
           title,

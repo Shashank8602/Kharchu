@@ -200,7 +200,6 @@ class SavedChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: kc.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kc.line),
       ),
       child: Row(
         children: [
