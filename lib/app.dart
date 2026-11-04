@@ -13,6 +13,7 @@ import 'features/profile/profile_screen.dart';
 import 'features/transactions/person_detail_screen.dart';
 import 'features/transactions/transactions_screen.dart';
 import 'providers.dart';
+import 'widgets/pill_nav_bar.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -92,34 +93,24 @@ class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.shell});
   final StatefulNavigationShell shell;
 
-  static const _tabs = [
-    (Icons.chat_bubble_outline, Icons.chat_bubble, 'Chat'),
-    (Icons.pie_chart_outline, Icons.pie_chart, 'Dashboard'),
-    (Icons.receipt_long_outlined, Icons.receipt_long, 'Transactions'),
-    (Icons.track_changes_outlined, Icons.track_changes, 'Budgets'),
-    (Icons.person_outline, Icons.person, 'Profile'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final kc = context.kc;
+    final tabs = [
+      PillTab(Icons.chat_bubble_outline, Icons.chat_bubble, 'Chat', kc.soft, kc.softInk),
+      PillTab(Icons.pie_chart_outline, Icons.pie_chart, 'Dashboard', kc.lentBg, kc.lentInk),
+      PillTab(Icons.receipt_long_outlined, Icons.receipt_long, 'Transactions', kc.warnBg,
+          kc.warnInk),
+      PillTab(Icons.track_changes_outlined, Icons.track_changes, 'Budgets', kc.borrowedBg,
+          kc.borrowedInk),
+      PillTab(Icons.person_outline, Icons.person, 'Profile', kc.soft, kc.softInk),
+    ];
     return Scaffold(
       body: shell,
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(border: Border(top: BorderSide(color: kc.line))),
-        child: NavigationBar(
-          selectedIndex: shell.currentIndex,
-          onDestinationSelected: (i) =>
-              shell.goBranch(i, initialLocation: i == shell.currentIndex),
-          destinations: [
-            for (final t in _tabs)
-              NavigationDestination(
-                icon: Icon(t.$1),
-                selectedIcon: Icon(t.$2),
-                label: t.$3,
-              ),
-          ],
-        ),
+      bottomNavigationBar: PillNavBar(
+        tabs: tabs,
+        selected: shell.currentIndex,
+        onSelected: (i) => shell.goBranch(i, initialLocation: i == shell.currentIndex),
       ),
     );
   }

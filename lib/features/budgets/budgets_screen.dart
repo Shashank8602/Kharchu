@@ -232,6 +232,7 @@ class _OverallCard extends StatelessWidget {
                   Text(monthName(v.month),
                       style: TextStyle(color: kc.ink, fontWeight: FontWeight.w700)),
                   Text(v.daysLeft == 0 ? 'Last day' : '${v.daysLeft} ${v.daysLeft == 1 ? 'day' : 'days'} left',
+                      maxLines: 1,
                       style: TextStyle(color: kc.muted, fontSize: 13)),
                 ],
               ),
@@ -250,6 +251,7 @@ class _OverallCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text('/ ${formatINR(r.limit)}',
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: kc.muted)),
                   ),
@@ -329,6 +331,7 @@ class _CategoryRow extends StatelessWidget {
               children: [
                 Flexible(
                   child: Text('${formatINR(r.spent)} of ${formatINR(r.limit)}',
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: kc.muted, fontSize: 13)),
                 ),
@@ -336,6 +339,7 @@ class _CategoryRow extends StatelessWidget {
                   remaining >= 0
                       ? '${formatINR(remaining)} left'
                       : '${formatINR(-remaining)} over',
+                  maxLines: 1,
                   style: TextStyle(color: kc.muted, fontSize: 13),
                 ),
               ],

@@ -90,3 +90,16 @@ item, place, payment, date, ids).
 - After the fixes I re-ran **only those two cases: both passed.** The other 28 were not run
   again after the prompt change, so the figure above is the honest overall number.
 - A 30-case sample is a smoke test, not a guarantee. Real phrasing varies more.
+
+## Round 2 changes (2026-11-04, not yet released)
+- **Several tasks in one chat message**: the agent runs every tool call of a round and can return
+  several cards plus a written answer ("money left" = budget remaining this month). Nothing is
+  saved until each card is confirmed, so totals in that same reply exclude the new entry.
+- **Manual entry** (works with no Groq key or tokens): Add expense / Add lending buttons on
+  Transactions, an add button in the chat bar, and "Add manually" on AI error messages.
+- Chat add-expense card now has **Cancel**.
+- UI: pill bottom bar and pill toggles, dashboard fits one screen (scrolls only on small
+  screens), card borders no longer overdrawn at corners, single-line labels, gradient hero
+  cards and tinted tabs/bubbles, "Using Kharchu since" removed from Profile.
+- Live AI accuracy not re-measured after the prompt change; a multi-task case was added to
+  `test/agent_eval` for the next live run.

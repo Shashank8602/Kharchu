@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/pill_toggle.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -233,19 +234,12 @@ class _GroqSettingsScreenState extends ConsumerState<GroqSettingsScreen> {
             Text('Voice language',
                 style: TextStyle(fontWeight: FontWeight.w600, color: kc.ink)),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<String>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: 'auto', label: Text('Auto')),
-                  ButtonSegment(value: 'en', label: Text('English')),
-                  ButtonSegment(value: 'kn', label: Text('Kannada')),
-                ],
-                selected: {lang},
-                onSelectionChanged: (s) =>
-                    ref.read(settingsProvider.notifier).setVoiceLanguage(s.first),
-              ),
+            PillToggle(
+              labels: const ['Auto', 'English', 'Kannada'],
+              selected: const ['auto', 'en', 'kn'].indexOf(lang).clamp(0, 2),
+              onChanged: (i) => ref
+                  .read(settingsProvider.notifier)
+                  .setVoiceLanguage(const ['auto', 'en', 'kn'][i]),
             ),
             const SizedBox(height: 16),
             Row(

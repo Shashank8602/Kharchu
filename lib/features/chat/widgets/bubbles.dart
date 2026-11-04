@@ -25,7 +25,7 @@ class UserBubble extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: kc.accent,
+            gradient: heroGradient(kc),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
@@ -59,8 +59,7 @@ class AssistantBubble extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: kc.surface,
-            border: Border.all(color: kc.line),
+            color: kc.soft,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
@@ -70,7 +69,7 @@ class AssistantBubble extends StatelessWidget {
           ),
           child: Text(
             text,
-            style: TextStyle(color: kc.ink, fontSize: 15, height: 1.4),
+            style: TextStyle(color: kc.softInk, fontSize: 15, height: 1.4),
           ),
         ),
       ),

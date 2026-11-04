@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kharchu/widgets/pill_nav_bar.dart';
 import 'package:kharchu/data/repositories/expense_repository.dart';
 import 'package:kharchu/data/repositories/lending_repository.dart';
 
@@ -19,7 +20,7 @@ void main() {
 
   Future<void> openTransactions(WidgetTester tester) async {
     await tester.tap(find.descendant(
-        of: find.byType(NavigationBar), matching: find.text('Transactions')));
+        of: find.byType(PillNavBar), matching: find.text('Transactions')));
     await tester.pumpAndSettle();
   }
 

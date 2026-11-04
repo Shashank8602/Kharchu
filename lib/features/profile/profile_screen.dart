@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/dates.dart';
 import '../../core/theme.dart';
 import '../../providers.dart';
+import '../../widgets/pill_toggle.dart';
 import '../../widgets/settings_row.dart';
 import 'backup_actions.dart';
 
@@ -35,11 +36,6 @@ class ProfileScreen extends ConsumerWidget {
     final initial = settings.profileName.isEmpty
         ? '?'
         : settings.profileName[0].toUpperCase();
-    final since =
-        settings.sinceIso == null || tryParseIso(settings.sinceIso!) == null
-        ? null
-        : '${monthName(settings.sinceIso!).substring(0, 3)} '
-              '${tryParseIso(settings.sinceIso!)!.year}';
 
     return Scaffold(
       backgroundColor: kc.bg,
@@ -49,12 +45,17 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: kc.accent,
+                Container(
+                  width: 60,
+                  height: 60,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: heroGradient(kc),
+                    shape: BoxShape.circle,
+                  ),
                   child: Text(
                     initial,
-                    style: headingStyle(size: 24, color: kc.onAccent),
+                    style: headingStyle(size: 24, color: Colors.white),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -68,11 +69,6 @@ class ProfileScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: headingStyle(size: 21, color: kc.ink),
                       ),
-                      if (since != null)
-                        Text(
-                          'Using Kharchu since $since',
-                          style: TextStyle(fontSize: 13, color: kc.muted),
-                        ),
                     ],
                   ),
                 ),
@@ -103,29 +99,22 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<ThemeMode>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          label: Text('System'),
+                  PillToggle(
+                    labels: const ['System', 'Light', 'Dark'],
+                    selected: const [
+                      ThemeMode.system,
+                      ThemeMode.light,
+                      ThemeMode.dark,
+                    ].indexOf(settings.themeMode),
+                    onChanged: (i) => ref
+                        .read(settingsProvider.notifier)
+                        .setThemeMode(
+                          const [
+                            ThemeMode.system,
+                            ThemeMode.light,
+                            ThemeMode.dark,
+                          ][i],
                         ),
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          label: Text('Light'),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          label: Text('Dark'),
-                        ),
-                      ],
-                      selected: {settings.themeMode},
-                      onSelectionChanged: (s) => ref
-                          .read(settingsProvider.notifier)
-                          .setThemeMode(s.first),
-                    ),
                   ),
                 ],
               ),
