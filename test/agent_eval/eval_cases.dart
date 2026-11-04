@@ -98,6 +98,16 @@ const _food = {'Food & Dining'};
 const _transport = {'Transport'};
 
 final evalCases = <EvalCase>[
+  EvalCase("Spent 100 on burger , what's the total spent and how much money am I left with to repay back to my frnds",
+      (r) {
+    if (r is! AgentMulti) return ['expected a card plus an answer, got ${_describe(r)}'];
+    final p = r.cards.first.proposal;
+    return [
+      if (p is! AddExpenseProposal || p.amountPaise != 10000) 'wrong card: ${p.type}',
+      if (r.text == null || !r.text!.contains('1,500')) 'answer lacks the 1,500 owed: "${r.text}"',
+    ];
+  }),
+  EvalCase('how much money am I left to repay back', (r) => _answer(r, has: ['1,500'])),
   // ---- several tasks in one message
   EvalCase('i spent 500rs on dinner today and tell me the total amount expenses and also how much money am left with for balance',
       (r) {

@@ -25,7 +25,7 @@ class UserBubble extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            gradient: heroGradient(kc),
+            color: kc.accent,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),

@@ -34,8 +34,6 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
     required this.borrowedBg,
     required this.borrowedInk,
     required this.bar,
-    required this.heroA,
-    required this.heroB,
     required this.chart,
   });
 
@@ -44,9 +42,6 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
   final Color warn, warnBg, warnInk;
   final Color danger, dangerBg, dangerInk;
   final Color track, bar;
-
-  /// Ends of the gradient used on hero cards and the user's chat bubbles.
-  final Color heroA, heroB;
   final Color lentBg, lentInk, borrowedBg, borrowedInk;
   final List<Color> chart;
 
@@ -74,8 +69,6 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
     borrowedBg: Color(0xFFF3ECF8),
     borrowedInk: Color(0xFF5B3480),
     bar: Color(0xFF94C7B8),
-    heroA: Color(0xFF0F6B5C),
-    heroB: Color(0xFF2A8F9A),
     chart: [
       Color(0xFF0F6B5C),
       Color(0xFFD9822B),
@@ -110,8 +103,6 @@ class KharchuColors extends ThemeExtension<KharchuColors> {
     borrowedBg: Color(0xFF2A1F38),
     borrowedInk: Color(0xFFCDB2E8),
     bar: Color(0xFF2E5E52),
-    heroA: Color(0xFF1C6E5F),
-    heroB: Color(0xFF237683),
     chart: [
       Color(0xFF3FAE95),
       Color(0xFFE08A3C),
@@ -210,6 +201,7 @@ ThemeData buildTheme(Brightness brightness) {
         backgroundColor: c.accent,
         foregroundColor: c.onAccent,
         minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       ),
@@ -219,6 +211,7 @@ ThemeData buildTheme(Brightness brightness) {
         foregroundColor: c.ink,
         minimumSize: const Size(48, 48),
         side: BorderSide(color: c.line),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
       ),
@@ -241,10 +234,3 @@ ThemeData buildTheme(Brightness brightness) {
     ),
   );
 }
-
-/// The gradient behind hero cards, bubbles and avatars.
-LinearGradient heroGradient(KharchuColors c) => LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [c.heroA, c.heroB],
-    );

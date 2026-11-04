@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../core/dates.dart';
 import '../../core/money.dart';
 import '../../data/db/app_database.dart';
+import '../../data/repositories/budget_repository.dart';
 import '../../data/repositories/category_repository.dart';
 import '../../data/repositories/chat_repository.dart';
 import '../../data/repositories/expense_repository.dart';
@@ -61,6 +62,7 @@ class AgentService {
     required this.categories,
     required this.lending,
     required this.today,
+    this.budgets,
     this.maxSteps = 4,
     this.historyTurns = 6,
   });
@@ -72,6 +74,9 @@ class AgentService {
   final CategoryRepository categories;
   final LendingRepository lending;
   final String Function() today;
+
+  /// Lets the prompt carry this month's budget left. Optional.
+  final BudgetRepository? budgets;
   final int maxSteps;
   final int historyTurns;
 
@@ -176,9 +181,18 @@ class AgentService {
       }
 
       // Only changes to confirm and nothing to answer: done, unless the
-      // message looks like it also asked a question.
-      if (!needsAnswer && !(wantsMore && step < maxSteps - 1)) {
-        return _finish(day, cards, null);
+      // message looks like it also asked a question. Models often stop after
+      // the card, so say plainly what is still open.
+      if (!needsAnswer) {
+        if (!wantsMore || step >= maxSteps - 1) return _finish(day, cards, null);
+        messages.add({
+          'role': 'user',
+          'content': 'The card is shown. The message above may also have asked '
+              'questions (totals, money left, who is owed). Answer every such '
+              'question now, using the "Right now" figures or the query tools. '
+              'Say the new entry is not counted until confirmed. If nothing '
+              'else was asked, reply with just: OK',
+        });
       }
     }
 
@@ -188,7 +202,9 @@ class AgentService {
   /// Stores the answer (if any) and picks the reply type.
   Future<AgentReply> _finish(String day, List<AgentCard> cards, String? answer) async {
     var text = answer?.trim();
-    if (text != null && text.isEmpty) text = null;
+    if (text != null && (text.isEmpty || (cards.isNotEmpty && text.toLowerCase() == 'ok'))) {
+      text = null;
+    }
     if (text == null && cards.isEmpty) text = stuckMessage;
     if (text != null) await chat.add(day: day, role: 'assistant', body: text);
     if (cards.isEmpty) return AgentAnswer(text!);
@@ -201,7 +217,7 @@ class AgentService {
   static bool _looksLikeMoreThanOneTask(String t) {
     final s = t.toLowerCase();
     return s.contains('?') ||
-        RegExp(r'(total|how much|balance|left|remaining|tell me|show me|what|and also)')
+        RegExp(r'(total|how much|balance|left|remaining|repay|reimburse|owe|tell me|show me|what|and also)')
             .hasMatch(s);
   }
 
@@ -232,11 +248,29 @@ class AgentService {
             '(${r.category.name}, ${r.expense.spentOn})')
         .toList();
     return buildSystemPrompt(
+      snapshot: await _snapshot(day),
       todayIso: day,
       categories: cats,
       people: people,
       recentExpenses: recent,
     );
+  }
+
+  /// Current figures, so a question can be answered even if the model skips
+  /// the query tools.
+  Future<String> _snapshot(String day) async {
+    final m = monthRange(day);
+    final spent = await expenses.total(m.from, m.to);
+    final totals = await lending.totals();
+    final overall = await budgets?.forCategory(null);
+    final budget = overall == null
+        ? 'no overall budget set'
+        : (overall.monthlyLimitPaise >= spent
+            ? '${formatINR(overall.monthlyLimitPaise - spent)} of the ${formatINR(overall.monthlyLimitPaise)} budget left'
+            : 'over the ${formatINR(overall.monthlyLimitPaise)} budget by ${formatINR(spent - overall.monthlyLimitPaise)}');
+    return 'spent this month ${formatINR(spent)}; $budget; '
+        'you owe others ${formatINR(totals.owePaise)} (to repay); '
+        'others owe you ${formatINR(totals.getPaise)}';
   }
 
   /// Today's last few turns as the model should remember them. Cards become

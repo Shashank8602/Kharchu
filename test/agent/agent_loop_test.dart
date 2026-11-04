@@ -386,6 +386,36 @@ void main() {
       expect(r.text, 'Spent so far: ₹0.');
     });
 
+    test('a card alone for a message that also asks a question is nudged to answer', () async {
+      t.callTool('propose_add_expense', addArgs(amount: 100, item: 'Burger'));
+      t.say('Spent so far ₹0. You owe others ₹0.');
+      final r = await t.agent.handle(
+          'Spent 100 on burger, what is the total spent and how much am I left to repay');
+      expect(r, isA<AgentMulti>());
+      expect((r as AgentMulti).text, contains('Spent so far'));
+      final nudge = t.sentMessages(1).last;
+      expect(nudge['role'], 'user');
+      expect(nudge['content'], contains('Answer every such question'));
+    });
+
+    test('a bare OK after the card is not shown as an answer', () async {
+      t.callTool('propose_add_expense', addArgs(amount: 100, item: 'Burger'));
+      t.say('OK');
+      final r = await t.agent.handle('burger 100, what is my total?');
+      expect(r, isA<AgentCard>());
+    });
+
+    test('the prompt carries what the user owes, so repay questions have the figure', () async {
+      final id = (await t.env.lending.findOrCreatePerson('Nitin')).id;
+      await t.env.lending.addLoan(
+          personId: id, direction: 'borrowed', principalPaise: 50000, happenedOn: kToday);
+      t.say('ok');
+      await t.agent.handle('how much do I have to repay?');
+      final system = t.sentMessages(0).first['content'] as String;
+      expect(system, contains('you owe others ₹500'));
+      expect(system, contains('no overall budget set'));
+    });
+
     test('a plain add is still one request and a single card', () async {
       t.callTool('propose_add_expense', addArgs());
       final r = await t.agent.handle('chats 1000');

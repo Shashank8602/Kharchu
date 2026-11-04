@@ -86,6 +86,7 @@ Future<AgentService> freshAgent(String key, AppDatabase db) async {
     expenses: expenses,
     categories: categories,
     lending: lending,
+    budgets: budgets,
     today: () => today,
   );
 }

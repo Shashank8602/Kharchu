@@ -103,7 +103,7 @@ class _Item extends StatelessWidget {
                     maxLines: 1,
                     softWrap: false,
                     style: TextStyle(
-                      fontSize: 10.5,
+                      fontSize: 10,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                       color: color,
                     ),

@@ -186,14 +186,15 @@ class _ButtonsState extends State<_Buttons> {
     return Row(
       children: [
         Expanded(
+          flex: 2,
           child: OutlinedButton(
             onPressed: _busy ? null : () => _run(widget.onCancel),
-            child: Text(widget.cancelLabel),
+            child: FittedBox(fit: BoxFit.scaleDown, child: Text(widget.cancelLabel)),
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          flex: 2,
+          flex: 3,
           child: FilledButton(
             style: widget.danger
                 ? FilledButton.styleFrom(
@@ -202,7 +203,7 @@ class _ButtonsState extends State<_Buttons> {
                   )
                 : null,
             onPressed: _busy ? null : () => _run(widget.onPrimary),
-            child: Text(widget.primaryLabel),
+            child: FittedBox(fit: BoxFit.scaleDown, child: Text(widget.primaryLabel)),
           ),
         ),
       ],
@@ -327,7 +328,7 @@ class _AddCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: cb.onEdit,
-                  child: const Text('Edit'),
+                  child: const FittedBox(fit: BoxFit.scaleDown, child: Text('Edit')),
                 ),
               ),
               const SizedBox(width: 10),

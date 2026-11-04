@@ -50,12 +50,12 @@ class ProfileScreen extends ConsumerWidget {
                   height: 60,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    gradient: heroGradient(kc),
+                    color: kc.accent,
                     shape: BoxShape.circle,
                   ),
                   child: Text(
                     initial,
-                    style: headingStyle(size: 24, color: Colors.white),
+                    style: headingStyle(size: 24, color: kc.onAccent),
                   ),
                 ),
                 const SizedBox(width: 14),

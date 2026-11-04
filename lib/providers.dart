@@ -137,6 +137,7 @@ final agentServiceProvider = Provider((ref) => AgentService(
       expenses: ref.watch(expenseRepoProvider),
       categories: ref.watch(categoryRepoProvider),
       lending: ref.watch(lendingRepoProvider),
+      budgets: ref.watch(budgetRepoProvider),
       today: ref.watch(todayFnProvider),
     ));
 
